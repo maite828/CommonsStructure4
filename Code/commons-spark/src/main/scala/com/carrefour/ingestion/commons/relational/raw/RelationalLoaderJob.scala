@@ -14,6 +14,7 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
   val FieldSep = "\\|@\\|" //FIXME parameter
 
   override def run(settings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Unit = {
+    val metadata = IngestionMetadataLoader.loadMetadata(settings.businessunit)
     val fs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
     val path = new Path(settings.inputPath)
     if (!fs.exists(path)) {
@@ -75,18 +76,18 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
         throw new IllegalArgumentException(s"Unsupported format $f. Supported formats are: text, gz.")
     }
 
-    val fieldsInfo = extractFieldsInfo(input, outputTable, transformations, settings.header)
+    val fieldsInfo = extractFieldsInfo(input, outputTable, transformations)
 
     Logger.info(s"Inserting in table $outputTable with fields: ${fieldsInfo.map(_.field).mkString(",")}")
 
-    val contentRaw = (if (settings.header)
+    val contentRaw = if (settings.header > 0)
       // discard header  
       input.mapPartitionsWithIndex { (idx, iter) =>
       if (idx == 0) {
-        iter.drop(1)
+        iter.drop(settings.header)
       } else iter
     }
-    else input)
+    else input
 
     val content = (if (settings.format == RelationalFormats.GzFormat) repartition(contentRaw, settings.numPartitions) else contentRaw).
       // filter empty records
@@ -114,7 +115,7 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
    * Builds the {@link FieldInfo} sequence from the given input RDD and field transformations specification.
    * Field names are taken from Hive Table Definition.
    */
-  def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]], header: Boolean)(implicit settings: RelationalLoaderJobSettings, sqlContext: SQLContext): Seq[FieldInfo] = {
+  def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit settings: RelationalLoaderJobSettings, sqlContext: SQLContext): Seq[FieldInfo] = {
     val fieldNames = sqlContext.table(tableName).schema.fields.map(_.name)
     FieldInfo.buildFieldsInfo(tableName.split("\\.").last, fieldNames, transformations)
   }

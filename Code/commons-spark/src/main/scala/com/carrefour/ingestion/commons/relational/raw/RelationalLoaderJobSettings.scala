@@ -14,11 +14,12 @@ case class RelationalLoaderJobSettings(
   transformationsTable: String = "",
   numPartitions: Int = 0,
   format: RelationalFormats.RelationalFormat = RelationalFormats.GzFormat,
-  header: Boolean = false,
+  header: Int = 0,
   date: Int = 0,
   year: Int = 0,
   month: Int = 0,
-  day: Int = 0) extends SparkJobSettings
+  day: Int = 0,
+  businessunit: String) extends SparkJobSettings
 
 object RelationalFormats {
   sealed trait RelationalFormat
@@ -78,7 +79,7 @@ object ArgsParser extends OptionParser[RelationalLoaderJobSettings]("RelationalL
   } text "File format: text|gz"
 
   opt[Unit]("with-header") action { (_, config) =>
-    config.copy(header = true)
+    config.copy(header = 1)
   } text "Files contain header"
 
   help("help") text "This help"
