@@ -23,7 +23,7 @@ object SqlUtils {
     }
 
     Logger.info(s"Hive Query File: $path")
-    Logger.info("Hive Query: " + query)
+    Logger.info(s"Hive Query: $query")
     Some(sqlContext.sql(query));
   }
 }

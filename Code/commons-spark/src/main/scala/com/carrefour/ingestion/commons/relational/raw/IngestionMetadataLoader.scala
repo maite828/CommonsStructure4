@@ -3,14 +3,9 @@ package com.carrefour.ingestion.commons.relational.raw
 import com.carrefour.ingestion.commons.exceptions.FatalException
 import com.carrefour.ingestion.commons.util.SqlUtils
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.DataFrame
 
+object IngestionMetadata {
 
-object RelationalFormats {
-  sealed trait RelationalFormat
-  case object TextFormat extends RelationalFormat
-  case object GzFormat extends RelationalFormat
-  case object ZipFormat extends RelationalFormat
 }
 
 /**
@@ -19,12 +14,12 @@ object RelationalFormats {
  */
 object IngestionMetadataLoader {
 
-  def loadMetadata(businessunit: String)(implicit sqlContext: SQLContext): Array[RelationalLoaderJobSettings] = {
+  def loadMetadata(settings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Array[RelationalLoaderJobSettings] = {
 
-    val metadata = SqlUtils.sql("/hql/loadMetadata.hql")
+    val metadata = SqlUtils.sql("/hql/loadMetadata.hql", settings.businessunit)
     metadata match{
       case Some(metadata) =>
-        metadata.map(row => {
+        metadata.collect.map(row => {
           val businessunit_id: Int = row.getAs[Int]("businessunit_id")
           val businessunit_name: String = row.getAs[String]("businessunit_name")
           val table_id: Int = row.getAs[Int]("table_id")
@@ -48,22 +43,23 @@ object IngestionMetadataLoader {
           val enclosechar: String = row.getAs[String]("enclosechar")
           val escapechar: String = row.getAs[String]("escapechar")
 
+          //FIXME no mapear -> nuevo objeto con lo necesario
           RelationalLoaderJobSettings(
             parentpath,
             schema_name,
             table_name,
-            "",
             transformationsschema + "." + transformationstable,
-            8,
+            8, // num_partitions
             RelationalFormats.TextFormat,
             headerlines,
-            1,
-            2,
-            3,
-            4,
-            "Mercancias"
+            fielddelimiter,
+            settings.date,
+            settings.year,
+            settings.month,
+            settings.day,
+            settings.businessunit
           )
-        }).collect()
+        })
       case None => throw new FatalException("No se han devuelto datos de metadatos.")
     }
   }

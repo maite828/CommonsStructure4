@@ -11,43 +11,32 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
 
   val Logger = LoggerFactory.getLogger(getClass)
 
-  val FieldSep = "\\|@\\|" //FIXME parameter
-
   override def run(settings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Unit = {
-    val metadata = IngestionMetadataLoader.loadMetadata(settings.businessunit)
+    val metadata = IngestionMetadataLoader.loadMetadata(settings)
     val fs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
-    val path = new Path(settings.inputPath)
-    if (!fs.exists(path)) {
-      Logger.error(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
-      throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
-    }
-
-    val (inputFiles: Seq[String], singleFile: Boolean) = if (fs.isDirectory(path)) {
-      val it = fs.listFiles(path, false)
-      var files: Seq[String] = Seq[String]()
-      while (it.hasNext()) {
-        files = it.next().getPath.toString() +: files
+    metadata.foreach( settings => {
+      val path = new Path(settings.inputPath)
+      if (!fs.exists(path)) {
+        Logger.error(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
+        throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
       }
-      (files, false)
-    } else (Seq(path.toString()), true)
 
-    val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
+      val (inputFiles: Seq[String], singleFile: Boolean) = if (fs.isDirectory(path)) {
+        val it = fs.listFiles(path, false)
+        var files: Seq[String] = Seq[String]()
+        while (it.hasNext()) {
+          files = it.next().getPath.toString() +: files
+        }
+        (files, false)
+      } else (Seq(path.toString()), true)
 
-    inputFiles.foreach(f => loadFile(f,
-      s"${settings.outputDb}.${
-        if (singleFile && !settings.outputTable.isEmpty()) settings.outputTable
-        else tableName(f, settings.tableSuffix)
-      }",
-      transformations)(settings, sqlContext))
-  }
+      // FIXME Por cada tabla recarga las transformaciones. Con una vez debería valer
+      val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
 
-  /**
-   * Obtains the table name from the given path, discarding the suffix if it appears before the extension.
-   * If the path doesn't have the given suffix, the table name will be everything before the extension.
-   */
-  def tableName(f: String, suffix: String) = new Path(f).getName.toString().split(s"$suffix\\.").toList match {
-    case (head: String) :: Nil => head.split("\\.").head.toLowerCase()
-    case (head: String) :: tail => head.toLowerCase()
+      val fullOutputTable = s"${settings.outputDb}.${settings.outputTable}"
+
+      inputFiles.foreach(f => loadFile(f, fullOutputTable, transformations)(settings, sqlContext))
+    })
   }
 
   /**
@@ -93,7 +82,7 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
       // filter empty records
       filter(!_.isEmpty()).
       // split fields
-      map(_.split(FieldSep, -1)).
+      map(_.split(settings.fieldDelimiter, -1)).
       // apply transformations
       map(fields => (fields zip fieldsInfo).
         map { case (fieldValue, fieldInfo) => fieldInfo.transformation.transform(fieldValue, fieldInfo.transformationArgs: _*) }).
