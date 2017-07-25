@@ -19,7 +19,7 @@ case class RelationalLoaderJobSettings(
   year: Int = 0,
   month: Int = 0,
   day: Int = 0,
-  businessunit: String) extends SparkJobSettings
+  businessunit: String = "") extends SparkJobSettings
 
 object RelationalFormats {
   sealed trait RelationalFormat

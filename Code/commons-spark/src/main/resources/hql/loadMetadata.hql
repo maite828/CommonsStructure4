@@ -8,4 +8,4 @@ left join config.ingestion_table ta on ta.businessunit_id = bu.businessunit_id
 left join config.ingestion_rel_table_file re on re.table_id = ta.table_id
 left join config.ingestion_file fi on fi.file_id = re.file_id
 left join config.ingestion_fileformat ff on ff.fileformat_id = fi.fileformat_id
- where bu.businessunit_name = $1
+ where bu.businessunit_name = '$1'

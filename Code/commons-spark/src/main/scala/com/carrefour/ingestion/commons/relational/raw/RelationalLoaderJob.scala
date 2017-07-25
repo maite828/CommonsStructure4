@@ -2,7 +2,7 @@ package com.carrefour.ingestion.commons.relational.raw
 
 import com.carrefour.ingestion.commons.util.SparkJob
 import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import org.slf4j.LoggerFactory
@@ -16,26 +16,29 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
     val fs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
     metadata.foreach( settings => {
       val path = new Path(settings.inputPath)
-      if (!fs.exists(path)) {
+      val status = fs.globStatus(path)
+      //if (!fs.exists(path)) {
+      if (status.length == 0) {
         Logger.error(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
         throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
       }
 
-      val (inputFiles: Seq[String], singleFile: Boolean) = if (fs.isDirectory(path)) {
-        val it = fs.listFiles(path, false)
-        var files: Seq[String] = Seq[String]()
-        while (it.hasNext()) {
-          files = it.next().getPath.toString() +: files
-        }
-        (files, false)
-      } else (Seq(path.toString()), true)
+
+//      val (inputFiles: Seq[String], singleFile: Boolean) = if (fs.isDirectory(path)) {
+//        val it = fs.listFiles(path, false)
+//        var files: Seq[String] = Seq[String]()
+//        while (it.hasNext()) {
+//          files = it.next().getPath.toString() +: files
+//        }
+//        (files, false)
+//      } else (Seq(path.toString()), true)
 
       // FIXME Por cada tabla recarga las transformaciones. Con una vez debería valer
       val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
 
       val fullOutputTable = s"${settings.outputDb}.${settings.outputTable}"
 
-      inputFiles.foreach(f => loadFile(f, fullOutputTable, transformations)(settings, sqlContext))
+      loadFile(settings.inputPath, fullOutputTable, transformations)(settings, sqlContext)
     })
   }
 
@@ -97,6 +100,9 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
     Logger.info(s"Dropping existing partition: year=${settings.year}, month=${settings.month}, day=${settings.day}") 
     sqlContext.sql(s"ALTER TABLE $outputTable DROP IF EXISTS PARTITION (year=${settings.year}, month=${settings.month}, day=${settings.day})")
     Logger.info(s"Writing in table $outputTable")
+//    Logger.info(s"Content First Line:\n ${content.first()}")
+//    Logger.info(s"Table Schema:\n ${schema} ")
+//    Logger.info(s"Dataframe Schema:\n ${df.printSchema()} ")
     df.write.insertInto(outputTable)
   }
 

@@ -45,7 +45,7 @@ object IngestionMetadataLoader {
 
           //FIXME no mapear -> nuevo objeto con lo necesario
           RelationalLoaderJobSettings(
-            parentpath,
+            s"${parentpath}/${filemask}",
             schema_name,
             table_name,
             transformationsschema + "." + transformationstable,
