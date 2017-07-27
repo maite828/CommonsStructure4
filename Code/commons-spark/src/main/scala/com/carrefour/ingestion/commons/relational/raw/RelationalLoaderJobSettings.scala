@@ -47,6 +47,12 @@ object ArgsParser extends OptionParser[RelationalLoaderJobSettings]("RelationalL
     config.copy(businessunit = value)
   } text "Business Unit to load"
 
+  opt[String]('p', "partitions") valueName "<num partitions>" action { (value, config) =>
+    val intValue = value.toInt
+    if (intValue >= 0) config.copy(numPartitions = intValue) else config
+  } text "Minimum number of RDD partitions to use for the input data. If 0, the original number of partitions will be used. Default value is 0."
+
+
   opt[String]("file-format") valueName "<text|gz>" action { (value, config) =>
     value.toLowerCase match {
       case "text" => config.copy(format = RelationalFormats.TextFormat)

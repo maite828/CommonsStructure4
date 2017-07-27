@@ -12,9 +12,14 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
   val Logger = LoggerFactory.getLogger(getClass)
 
   override def run(settings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Unit = {
+    //Load metadata objects
     val metadata = IngestionMetadataLoader.loadMetadata(settings)
+    val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
+
+    //Starting files load
     val fs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
     metadata.foreach( settings => {
+      Logger.info(s"Loading file ${settings.inputPath}")
       val path = new Path(settings.inputPath)
       val status = fs.globStatus(path)
       //if (!fs.exists(path)) {
@@ -32,9 +37,6 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
 //        }
 //        (files, false)
 //      } else (Seq(path.toString()), true)
-
-      // FIXME Por cada tabla recarga las transformaciones. Con una vez debería valer
-      val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
 
       val fullOutputTable = s"${settings.outputDb}.${settings.outputTable}"
 
@@ -94,16 +96,29 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
       // build row
       map(Row(_: _*))
     
-    val schema = sqlContext.table(outputTable).schema
-    val df = sqlContext.createDataFrame(content, schema)
-    
     Logger.info(s"Dropping existing partition: year=${settings.year}, month=${settings.month}, day=${settings.day}") 
     sqlContext.sql(s"ALTER TABLE $outputTable DROP IF EXISTS PARTITION (year=${settings.year}, month=${settings.month}, day=${settings.day})")
     Logger.info(s"Writing in table $outputTable")
 //    Logger.info(s"Content First Line:\n ${content.first()}")
 //    Logger.info(s"Table Schema:\n ${schema} ")
 //    Logger.info(s"Dataframe Schema:\n ${df.printSchema()} ")
-    df.write.insertInto(outputTable)
+    try {
+      val schema = sqlContext.table(outputTable).schema
+      val prueba = content.map(r =>
+          if (r.length != 33)
+            throw new Exception(s"Row errónea: ${r} ")
+      )
+      Logger.info(s"Primera fila del RDD:\n ${prueba.first()}")
+      val df = sqlContext.createDataFrame(content, schema)
+      df.write.insertInto(outputTable)
+    }
+    catch{
+      case e: Exception =>
+        Logger.info(s"Primera fila del RDD:\n ${content.first()}")
+        Logger.info(s"${content.first().schema}")
+        e.printStackTrace()
+        throw e
+    }
   }
 
   /**
