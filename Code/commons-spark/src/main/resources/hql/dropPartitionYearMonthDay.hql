@@ -1,0 +1,2 @@
+ALTER TABLE $1
+ DROP IF EXISTS PARTITION (year=$2, month=$3, day=$4)
