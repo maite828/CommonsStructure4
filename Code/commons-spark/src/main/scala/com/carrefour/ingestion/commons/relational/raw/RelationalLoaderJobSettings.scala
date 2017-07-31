@@ -19,7 +19,8 @@ case class RelationalLoaderJobSettings(
   year: Int = 0,
   month: Int = 0,
   day: Int = 0,
-  businessunit: String = "") extends SparkJobSettings
+  var businessunit: String = "",
+  entity: String = "") extends SparkJobSettings
 
 object RelationalFormats {
   sealed trait RelationalFormat
@@ -34,6 +35,11 @@ object RelationalFormats {
 object ArgsParser extends OptionParser[RelationalLoaderJobSettings]("RelationalLoaderDriver") {
 
   head("Relational data loader", "1.0")
+
+  opt[String]('e',"entity") valueName "<entity to load>" action{ (value, config) =>
+    val entityValue = value
+    config.copy(entity = entityValue)
+  } text "Entity to load. If not specified, the process will load all of the entities defined in the Hive parameters"
   
   opt[String]('d', "date") required () valueName "<load date>" action { (value, config) =>
     val dateValue = value.toInt
@@ -43,9 +49,10 @@ object ArgsParser extends OptionParser[RelationalLoaderJobSettings]("RelationalL
     config.copy(date = dateValue, year = yearValue, month = monthValue, day = dayValue)
   } text "Loading date"
 
-  opt[String]('b', "businessunit") required () valueName "<business unit>" action { (value, config) =>
-    config.copy(businessunit = value)
-  } text "Business Unit to load"
+  opt[String]('t', "transformations") required () valueName "<transformations_table>" action { (value, config) =>
+    val transformations = value
+    config.copy(transformationsTable = transformations)
+  } text "Loading date"
 
   opt[String]('p', "partitions") valueName "<num partitions>" action { (value, config) =>
     val intValue = value.toInt

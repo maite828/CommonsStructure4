@@ -1,8 +1,8 @@
 package com.carrefour.ingestion.commons.exceptions
 
 /**
-  * Excepción fatal
+  * Custom fatal exception
   *
-  * @param message - mensaje de la excepción
+  * @param message - Exception message
   */
 class FatalException(message: String) extends Exception(message)
