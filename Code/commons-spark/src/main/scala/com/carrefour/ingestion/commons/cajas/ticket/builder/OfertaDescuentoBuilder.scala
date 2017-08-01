@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.cajas.raw.builder
+package com.carrefour.ingestion.commons.cajas.ticket.builder
 
 import com.carrefour.ingestion.commons.util.transform.TransformationInfo
 

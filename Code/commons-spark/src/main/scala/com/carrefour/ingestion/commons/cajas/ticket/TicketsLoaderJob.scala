@@ -1,6 +1,6 @@
-package com.carrefour.ingestion.commons.cajas.raw
+package com.carrefour.ingestion.commons.cajas.ticket
 
-import com.carrefour.ingestion.commons.cajas.raw.builder.TicketRowBuilder
+import com.carrefour.ingestion.commons.cajas.ticket.builder.TicketRowBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.slf4j.LoggerFactory

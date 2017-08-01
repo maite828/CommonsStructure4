@@ -1,13 +1,10 @@
-package com.carrefour.ingestion.commons.cajas.raw.builder
+package com.carrefour.ingestion.commons.cajas.ticket.builder
 
-import org.apache.spark.annotation.DeveloperApi
+import com.carrefour.ingestion.commons.cajas.ticket.TicketInfo
+import com.carrefour.ingestion.commons.util.transform.{FieldInfo, TransformationInfo}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructType
 import org.slf4j.LoggerFactory
-
-import com.carrefour.ingestion.commons.cajas.raw.TicketInfo
-import com.carrefour.ingestion.commons.util.transform.FieldInfo
-import com.carrefour.ingestion.commons.util.transform.TransformationInfo
 
 abstract class TicketRowBuilder(allTransformations: Map[String, Map[String, TransformationInfo]]) extends Serializable {
 

@@ -1,10 +1,10 @@
-package com.carrefour.ingestion.commons.cajas.raw.builder
+package com.carrefour.ingestion.commons.cajas.ticket.builder
 
 import com.carrefour.ingestion.commons.util.transform.TransformationInfo
 
-class ReglasCalculoBonificacionBuilder(fieldsInfo: Map[String, Map[String, TransformationInfo]]) extends TicketRowBuilder(fieldsInfo) {
+class DetalleCalculoBonificacionBuilder(fieldsInfo: Map[String, Map[String, TransformationInfo]]) extends TicketRowBuilder(fieldsInfo) {
 
-  override def tableName: String = "t_reglas_calculo_bonificacion"
+  override def tableName: String = "t_detalle_calculo_bonificacion"
 
   val NAcumField = "nacum"
   val SegmentoField = "segmento"
@@ -15,10 +15,11 @@ class ReglasCalculoBonificacionBuilder(fieldsInfo: Map[String, Map[String, Trans
   val ValorBonField = "valorbon"
   val TipoBnfPagoField = "tipobnfpago"
   val ValorBnfPagoField = "valorbnfpago"
-  val ImporteBaseField = "importebase"
+  val CodArtField = "codart"
+  val SFamCodField = "sfamcod"
+  val SecCodField = "seccod"
   val CantField = "cant"
   val ImporteBnfField = "importebnf"
-  val ImportePagoField = "importepago"
 
   private[this] val Fields = Seq[String](
     NAcumField,
@@ -30,10 +31,11 @@ class ReglasCalculoBonificacionBuilder(fieldsInfo: Map[String, Map[String, Trans
     ValorBonField,
     TipoBnfPagoField,
     ValorBnfPagoField,
-    ImporteBaseField,
+    CodArtField,
+    SFamCodField,
+    SecCodField,
     CantField,
-    ImporteBnfField,
-    ImportePagoField)
+    ImporteBnfField)
 
   override def fieldNames() = Fields
 }

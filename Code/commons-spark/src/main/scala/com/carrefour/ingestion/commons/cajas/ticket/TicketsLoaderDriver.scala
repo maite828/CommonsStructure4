@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.cajas.raw
+package com.carrefour.ingestion.commons.cajas.ticket
 
 import com.carrefour.ingestion.commons.util.SparkUtils
 

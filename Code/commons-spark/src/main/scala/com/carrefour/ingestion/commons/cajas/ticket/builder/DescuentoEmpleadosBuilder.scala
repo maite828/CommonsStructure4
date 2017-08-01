@@ -1,9 +1,5 @@
-package com.carrefour.ingestion.commons.cajas.raw.builder
+package com.carrefour.ingestion.commons.cajas.ticket.builder
 
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.types.StructField
-
-import com.carrefour.ingestion.commons.cajas.raw.TicketInfo
 import com.carrefour.ingestion.commons.util.transform.TransformationInfo
 
 class DescuentoEmpleadosBuilder(fieldsInfo: Map[String, Map[String, TransformationInfo]]) extends TicketRowBuilder(fieldsInfo) {
