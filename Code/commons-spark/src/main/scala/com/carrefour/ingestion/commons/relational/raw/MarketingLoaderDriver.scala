@@ -1,7 +1,5 @@
 package com.carrefour.ingestion.commons.relational.raw
 
-
-import com.carrefour.ingestion.commons.relational.raw.{ArgsParser, RelationalLoaderJob, RelationalLoaderJobSettings}
 import com.carrefour.ingestion.commons.util.SparkUtils
 
 object MarketingLoaderDriver {
