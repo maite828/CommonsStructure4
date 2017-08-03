@@ -10,13 +10,22 @@ object IngestionMetadata {
 
 /**
  * Parser for the relational data loader program. Method  {@link #parse} produces a {@link RelationalJobSettings}
-  * to configure the Spark job.
+ * to configure the Spark job.
  */
 object IngestionMetadataLoader {
 
+  /**
+    *
+    * @param settings Basic configuration loaded through parameters in the command line.
+    * @param sqlContext
+    * @return - A dataframe with all the metadata associated to the businessunit specified in settings
+    */
+
   def loadMetadata(settings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Array[RelationalLoaderJobSettings] = {
 
-    val metadata = SqlUtils.sql("/hql/loadMetadata.hql", settings.businessunit)
+    val metadata = if (settings.entity == "")
+      SqlUtils.sql("/hql/load_BU_Metadata.hql", settings.businessunit) else
+      SqlUtils.sql("/hql/load_Entity_Metadata.hql", settings.businessunit, settings.entity)
     metadata match{
       case Some(metadata) =>
         metadata.collect.map(row => {
