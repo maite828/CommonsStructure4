@@ -2,11 +2,11 @@ package com.carrefour.ingestion.commons.cajas.ticket
 
 import java.util.regex.Pattern
 
+import com.carrefour.ingestion.commons.cajas.movi.MoviLoaderSettings
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
-
 import com.carrefour.ingestion.commons.util.ExtractionUtils
 
 /**
@@ -25,6 +25,7 @@ object TUtils {
   private val NumPartitions = 200
 
   val TicketFileNamePattern = Pattern.compile("\\d{8}_\\d{4}_t\\d{6}t\\.\\d{3}")
+  val MoviFileNamePattern = Pattern.compile("\\d{8}_\\d{4}_movi\\.\\d{3}")
 
   /**
    * Creates a RDD with the ticket files: (filename, content), according to the given configuration (path, format, partitions).
@@ -34,6 +35,13 @@ object TUtils {
     tFiles(settings.inputPath, settings.format, TicketFileNamePattern, settings.numPartitions)
   }
 
+  /**
+    * Creates a RDD with the movi files: (filename, content), according to the given configuration (path, format).
+    * It will only include in the RDD those files that match MoviFileNamePattern.
+    */
+  def moviFiles(settings: MoviLoaderSettings)(implicit sc: SparkContext): RDD[(String, String)] = {
+    tFiles(settings.inputPath, settings.format, MoviFileNamePattern)
+  }
 
   /**
    * Loads t files from the given path in the specified format. Filenames not matching the pattern will be filtered out.
