@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.relational.raw
+package com.carrefour.ingestion.commons.Loader
 
 import com.carrefour.ingestion.commons.util.SparkJobSettings
 import scopt.OptionParser
@@ -6,33 +6,28 @@ import scopt.OptionParser
 /**
  * Settings to load relational data.
  */
-case class RelationalLoaderJobSettings(
-  inputPath: String = "",
-  outputDb: String = "", 
-  outputTable: String = "",
+case class JobSettingsLoader(
+  var businessunit: String = "",
+  entity: String = "",
   transformationsTable: String = "",
   numPartitions: Int = 0,
-  format: RelationalFormats.RelationalFormat = RelationalFormats.GzFormat,
-  header: Int = 0,
-  fieldDelimiter: String = "",
+//  format: FileFormats.FileFormat = FileFormats.GzFormat,
   date: Int = 0,
   year: Int = 0,
   month: Int = 0,
-  day: Int = 0,
-  var businessunit: String = "",
-  entity: String = "") extends SparkJobSettings
+  day: Int = 0) extends SparkJobSettings
 
-object RelationalFormats {
-  sealed trait RelationalFormat
-  case object TextFormat extends RelationalFormat
-  case object GzFormat extends RelationalFormat
-  case object ZipFormat extends RelationalFormat
+object FileFormats {
+  sealed trait FileFormat
+  case object TextFormat extends FileFormat
+  case object GzFormat extends FileFormat
+  case object ZipFormat extends FileFormat
 }
 
 /**
- * Parser for the relational data loader program. Method  {@link #parse} produces a {@link RelationalJobSettings} to configure the Spark job.
+ * Parser for the relational data loader program. Method  {@link #parse} produces a {@link JobSettings} to configure the Spark job.
  */
-object ArgsParser extends OptionParser[RelationalLoaderJobSettings]("RelationalLoaderDriver") {
+object ArgsParser extends OptionParser[JobSettingsLoader]("RelationalLoaderDriver") {
 
   head("Relational data loader", "1.0")
 
@@ -60,15 +55,15 @@ object ArgsParser extends OptionParser[RelationalLoaderJobSettings]("RelationalL
   } text "Minimum number of RDD partitions to use for the input data. If 0, the original number of partitions will be used. Default value is 0."
 
 
-  opt[String]("file-format") valueName "<text|gz>" action { (value, config) =>
-    value.toLowerCase match {
-      case "text" => config.copy(format = RelationalFormats.TextFormat)
-      case "gz" => config.copy(format = RelationalFormats.GzFormat)
-      //FIXME support zip format
-      //      case "zip" => config.copy(format = RelationalFormats.ZipFormat)
-      case _ => throw new IllegalArgumentException(s"Unsupported file format: $value. Allowed formats are: text, gz")
-    }
-  } text "File format: text|gz"
+//  opt[String]("file-format") valueName "<text|gz>" action { (value, config) =>
+//    value.toLowerCase match {
+//      case "text" => config.copy(format = FileFormats.TextFormat)
+//      case "gz" => config.copy(format = FileFormats.GzFormat)
+//      //FIXME support zip format
+//      //      case "zip" => config.copy(format = RelationalFormats.ZipFormat)
+//      case _ => throw new IllegalArgumentException(s"Unsupported file format: $value. Allowed formats are: text, gz")
+//    }
+//  } text "File format: text|gz"
 
   help("help") text "This help"
 }

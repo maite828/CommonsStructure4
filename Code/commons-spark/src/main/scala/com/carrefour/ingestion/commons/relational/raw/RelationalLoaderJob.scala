@@ -1,18 +1,19 @@
 package com.carrefour.ingestion.commons.relational.raw
 
-import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}
-import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
+import com.carrefour.ingestion.commons.Loader.{DelimitedFileType, FileFormats, IngestionMetadataLoader, JobSettingsLoader}
 import com.carrefour.ingestion.commons.exceptions.RowFormatException
-import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
+import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
+import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import org.slf4j.LoggerFactory
 
-object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
+object RelationalLoaderJob extends SparkJob[JobSettingsLoader] {
 
   val Logger = LoggerFactory.getLogger(getClass)
 
-  override def run(jobSettings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Unit = {
+  override def run(jobSettings: JobSettingsLoader)(implicit sqlContext: SQLContext): Unit = {
     //Getting the metadata for the configuration of the load
     val metadata = IngestionMetadataLoader.loadMetadata(jobSettings)
     //Getting the transformations from the table specified in the settings
@@ -29,24 +30,13 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
         Logger.error(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
         throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
       }
-      /*if (status.length == 0) {
-        Logger.error(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
-        throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. Path doesnt exist.")
-      }*/
-
-
-      //      val (inputFiles: Seq[String], singleFile: Boolean) = if (fs.isDirectory(path)) {
-      //        val it = fs.listFiles(path, false)
-      //        var files: Seq[String] = Seq[String]()
-      //        while (it.hasNext()) {
-      //          files = it.next().getPath.toString() +: files
-      //        }
-      //        (files, false)
-      //      } else (Seq(path.toString()), true)
 
       val fullOutputTable = s"${settings.outputDb}.${settings.outputTable}"
 
-      loadFile(settings.inputPath, fullOutputTable, transformations)(settings, sqlContext)
+      settings.fileType match {
+        case dft: DelimitedFileType => loadDelimitedFile (settings.inputPath, fullOutputTable, dft, transformations, settings.date)
+
+      }
     })
   }
 
@@ -58,17 +48,17 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
     * @param inputPath Path of the file to be loaded.
     * @param outputTable Schema and name of the table where the data will be stored (schema.name).
     * @param transformations Map with the transformations to be applied to the fields.
-    * @param settings Collection of the necessary settings for the table to be loaded.
+    * @param fileType Collection of the necessary settings for the file to be loaded.
     * @param sqlContext SQL Context used for loading the input file from HDFS
     */
-  def loadFile(inputPath: String, outputTable: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit settings: RelationalLoaderJobSettings, sqlContext: SQLContext): Unit = {
-    val loadYear = settings.year
-    val loadMonth = settings.month
-    val loadDay = settings.day
+  def loadDelimitedFile(inputPath: String, outputTable: String, fileType: DelimitedFileType, transformations: Map[String, Map[String, TransformationInfo]], part_date: Int)(implicit sqlContext: SQLContext): Unit = {
+    val loadYear = part_date.toString.substring(0,4).toInt
+    val loadMonth = part_date.toString.substring(4,6).toInt
+    val loadDay = part_date.toString.substring(6,8).toInt
     Logger.info(s"Processing file $inputPath to $outputTable for date ${loadYear}${loadMonth}${loadDay}")
-    val input = settings.format match {
-      case RelationalFormats.TextFormat => sqlContext.sparkContext.textFile(inputPath, settings.numPartitions)
-      case RelationalFormats.GzFormat => sqlContext.sparkContext.textFile(inputPath)
+    val input = fileType.fileFormat match {
+      case FileFormats.TextFormat => sqlContext.sparkContext.textFile(inputPath, fileType.numPartitions)
+      case FileFormats.GzFormat => sqlContext.sparkContext.textFile(inputPath)
       //FIXME support zip format
       //      case RelationalFormats.ZipFormat => 
       //        sqlContext.sparkContext.hadoopFile(inputPath, classOf[ZipInputFormat], classOf[Text], classOf[Text],
@@ -87,24 +77,25 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
     // Transformation and write
     Logger.info(s"Inserting in table $outputTable with fields: ${fieldsInfo.map(_.field).mkString(",")}")
     try {
-      val contentRaw = if (settings.header > 0)
+      val contentRaw = if (fileType.headerLines > 0)
       // discard header
         input.mapPartitionsWithIndex { (idx, iter) =>
           if (idx == 0) {
-            iter.drop(settings.header)
+            iter.drop(fileType.headerLines)
           } else iter
         }
       else input
 
-      val regs = (if (settings.format == RelationalFormats.GzFormat) repartition(contentRaw, settings.numPartitions) else contentRaw).
+      val regs = (if (fileType.fileFormat == FileFormats.GzFormat) repartition(contentRaw, fileType.numPartitions) else contentRaw).
         // filter empty records
         filter(!_.isEmpty()).
         // split fields
-        map(_.split(settings.fieldDelimiter, -1))
+        map(_.split(fileType.fieldDelimiter, -1))
 
       // mark bad records and apply transformations
       val content = regs.
         map(fields => {
+          //FIXME Test fields length properly
           if (fields.length == fieldsInfo.length - 3) {
             val transField = (fields zip fieldsInfo).
               map {
@@ -118,17 +109,17 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
           }
         })
 
-      Logger.info(s"Dropping existing partition: year=${settings.year}, month=${settings.month}, day=${settings.day}")
+      Logger.info(s"Dropping existing partition: year=${loadYear}, month=${loadMonth}, day=${loadDay}")
       SqlUtils.sql("/hql/dropPartitionYearMonthDay.hql",
         outputTable,
-        settings.year.toString,
-        settings.month.toString,
-        settings.day.toString)
+        loadYear.toString,
+        loadMonth.toString,
+        loadDay.toString)
 
       Logger.info(s"Writing in table $outputTable")
       val schema = sqlContext.table(outputTable).schema
       val df = sqlContext.createDataFrame(content, schema)
-      df.write.insertInto(outputTable)
+      df.repartition(8).write.insertInto(outputTable)
     }
     catch {
       case e: Exception =>
@@ -141,7 +132,7 @@ object RelationalLoaderJob extends SparkJob[RelationalLoaderJobSettings] {
     * Builds the {@link FieldInfo} sequence from the given input RDD and field transformations specification.
     * Field names are taken from Hive Table Definition.
     */
-  def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit settings: RelationalLoaderJobSettings, sqlContext: SQLContext): Seq[FieldInfo] = {
+  def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit sqlContext: SQLContext): Seq[FieldInfo] = {
     val fieldNames = sqlContext.table(tableName).schema.fields.map(_.name)
     FieldInfo.buildFieldsInfo(tableName.split("\\.").last, fieldNames, transformations)
   }

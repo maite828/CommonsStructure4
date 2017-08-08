@@ -1,18 +1,43 @@
-package com.carrefour.ingestion.commons.relational.raw
+package com.carrefour.ingestion.commons.Loader
 
 import com.carrefour.ingestion.commons.exceptions.FatalException
 import com.carrefour.ingestion.commons.util.SqlUtils
 import org.apache.spark.sql.SQLContext
 
-object IngestionMetadata {
+case class IngestionMetadata(
+  inputPath: String = "",
+  outputDb: String = "",
+  outputTable: String = "",
+  transformationsTable: String = "",
+  fileType: FileType,
+  date: Int = 0,
+  year: Int = 0,
+  month: Int = 0,
+  day: Int = 0,
+  var businessunit: String = "",
+  entity: String = "")
 
-}
+trait FileType {}
+case class DelimitedFileType(
+  fileFormat: FileFormats.FileFormat,
+  numPartitions: Int,
+  fieldDelimiter: String,
+  lineDelimiter: String,
+  endsWithDelimiter: Boolean,
+  headerLines: Int,
+  dateDefaultFormat: String,
+  encloseChar: String,
+  escapeChar:String) extends FileType
+case class NoFileType() extends FileType
+
 
 /**
  * Parser for the relational data loader program. Method  {@link #parse} produces a {@link RelationalJobSettings}
  * to configure the Spark job.
  */
 object IngestionMetadataLoader {
+
+  val defaultNumPartitions = 8
 
   /**
     *
@@ -21,7 +46,7 @@ object IngestionMetadataLoader {
     * @return - A dataframe with all the metadata associated to the businessunit specified in settings
     */
 
-  def loadMetadata(settings: RelationalLoaderJobSettings)(implicit sqlContext: SQLContext): Array[RelationalLoaderJobSettings] = {
+  def loadMetadata(settings: JobSettingsLoader)(implicit sqlContext: SQLContext): Array[IngestionMetadata] = {
 
     val metadata = if (settings.entity == "")
       SqlUtils.sql("/hql/load_BU_Metadata.hql", settings.businessunit) else
@@ -52,21 +77,27 @@ object IngestionMetadataLoader {
           val enclosechar: String = row.getAs[String]("enclosechar")
           val escapechar: String = row.getAs[String]("escapechar")
 
+          val numPartitions = if (settings.numPartitions == 0) defaultNumPartitions else settings.numPartitions
+
+          val fileType = fileformat_type match {
+            case "DELIMITED" => DelimitedFileType(FileFormats.TextFormat, numPartitions, fielddelimiter, linedelimiter, endswithdelimiter, headerlines, datedefaultformat, enclosechar, escapechar)
+            case "TICKET" => NoFileType()
+            case "MOVI" => NoFileType()
+          }
+
           //FIXME no mapear -> nuevo objeto con lo necesario
-          RelationalLoaderJobSettings(
+          IngestionMetadata(
             s"${parentpath}/${filemask}",
             schema_name,
             table_name,
             transformationsschema + "." + transformationstable,
-            8, // num_partitions
-            RelationalFormats.TextFormat,
-            headerlines,
-            fielddelimiter,
+            fileType,
             settings.date,
             settings.year,
             settings.month,
             settings.day,
-            settings.businessunit
+            settings.businessunit,
+            table_name
           )
         })
       case None => throw new FatalException("No se han devuelto datos de metadatos.")
