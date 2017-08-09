@@ -1,6 +1,6 @@
 package com.carrefour.ingestion.commons.relational.raw
 
-import com.carrefour.ingestion.commons.Loader.{DelimitedFileType, FileFormats, IngestionMetadataLoader, JobSettingsLoader}
+import com.carrefour.ingestion.commons.loader.{DelimitedFileType, FileFormats, IngestionMetadataLoader, JobSettingsLoader}
 import com.carrefour.ingestion.commons.exceptions.RowFormatException
 import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
 import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}

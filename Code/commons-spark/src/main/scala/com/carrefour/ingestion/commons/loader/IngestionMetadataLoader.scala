@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.Loader
+package com.carrefour.ingestion.commons.loader
 
 import com.carrefour.ingestion.commons.exceptions.FatalException
 import com.carrefour.ingestion.commons.util.SqlUtils
