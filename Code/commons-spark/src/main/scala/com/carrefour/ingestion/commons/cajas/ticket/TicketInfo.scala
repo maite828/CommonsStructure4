@@ -3,7 +3,7 @@ package com.carrefour.ingestion.commons.cajas.ticket
 import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
 
-case class TicketInfo(fecha: String, tienda: String, pos: String, num: String, tipo: String)
+case class TicketInfo(fecha: String, tienda: String, pos: String, num: String, tipo: String, year: Integer, month: Integer, day: Integer)
 
 object TicketInfo {
 
@@ -22,6 +22,9 @@ object TicketInfo {
       tienda = matcher.group("tienda"),
       pos = matcher.group("pos"),
       num = matcher.group("num"),
-      tipo = matcher.group("tipo"))
+      tipo = matcher.group("tipo"),
+      year = Integer.valueOf(matcher.group("fecha").substring(0,4)),
+      month = Integer.valueOf(matcher.group("fecha").substring(4,6)),
+      day = Integer.valueOf(matcher.group("fecha").substring(6,8)))
   }
 }
