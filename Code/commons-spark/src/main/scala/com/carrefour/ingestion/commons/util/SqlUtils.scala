@@ -1,6 +1,6 @@
 package com.carrefour.ingestion.commons.util
 
-import com.carrefour.ingestion.commons.exceptions.FatalException
+import com.carrefour.ingestion.commons.exception.FatalException
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.slf4j.LoggerFactory
 

@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.exceptions
+package com.carrefour.ingestion.commons.exception
 
 /**
   * Custom fatal exception

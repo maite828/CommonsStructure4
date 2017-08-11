@@ -1,34 +1,22 @@
 package com.carrefour.ingestion.commons.loader
 
-import com.carrefour.ingestion.commons.exceptions.FatalException
+import com.carrefour.ingestion.commons.bean.{DelimitedFileType, FileFormats, FileType, NoFileType}
+import com.carrefour.ingestion.commons.exception.FatalException
 import com.carrefour.ingestion.commons.util.SqlUtils
 import org.apache.spark.sql.SQLContext
 
 case class IngestionMetadata(
-  inputPath: String = "",
-  outputDb: String = "",
-  outputTable: String = "",
-  transformationsTable: String = "",
-  fileType: FileType,
-  date: Int = 0,
-  year: Int = 0,
-  month: Int = 0,
-  day: Int = 0,
-  var businessunit: String = "",
-  entity: String = "")
-
-trait FileType {}
-case class DelimitedFileType(
-  fileFormat: FileFormats.FileFormat,
-  numPartitions: Int,
-  fieldDelimiter: String,
-  lineDelimiter: String,
-  endsWithDelimiter: Boolean,
-  headerLines: Int,
-  dateDefaultFormat: String,
-  encloseChar: String,
-  escapeChar:String) extends FileType
-case class NoFileType() extends FileType
+                              inputPath: String = "",
+                              outputDb: String = "",
+                              outputTable: String = "",
+                              transformationsTable: String = "",
+                              fileType: FileType,
+                              date: Int = 0,
+                              year: Int = 0,
+                              month: Int = 0,
+                              day: Int = 0,
+                              var businessunit: String = "",
+                              entity: String = "")
 
 
 /**
@@ -46,7 +34,7 @@ object IngestionMetadataLoader {
     * @return - A dataframe with all the metadata associated to the businessunit specified in settings
     */
 
-  def loadMetadata(settings: JobSettingsLoader)(implicit sqlContext: SQLContext): Array[IngestionMetadata] = {
+  def loadMetadata(settings: IngestionSettings)(implicit sqlContext: SQLContext): Array[IngestionMetadata] = {
 
     val metadata = if (settings.entity == "")
       SqlUtils.sql("/hql/load_BU_Metadata.hql", settings.businessunit) else

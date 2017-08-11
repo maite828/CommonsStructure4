@@ -6,7 +6,7 @@ import scopt.OptionParser
 /**
  * Settings to load relational data.
  */
-case class JobSettingsLoader(
+case class IngestionSettings(
   var businessunit: String = "",
   entity: String = "",
   transformationsTable: String = "",
@@ -17,17 +17,10 @@ case class JobSettingsLoader(
   day: Int = 0
 ) extends SparkJobSettings
 
-object FileFormats {
-  sealed trait FileFormat
-  case object TextFormat extends FileFormat
-  case object GzFormat extends FileFormat
-  case object ZipFormat extends FileFormat
-}
-
 /**
  * Parser for the relational data loader program. Method  {@link #parse} produces a {@link JobSettings} to configure the Spark job.
  */
-object ArgsParser extends OptionParser[JobSettingsLoader]("RelationalLoaderDriver") {
+object IngestionSettingsLoader extends OptionParser[IngestionSettings]("IngestionJobSettings") {
 
   head("Relational data loader", "1.0")
 

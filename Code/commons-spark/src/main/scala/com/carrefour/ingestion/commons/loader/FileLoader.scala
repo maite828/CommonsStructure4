@@ -1,6 +1,7 @@
 package com.carrefour.ingestion.commons.loader
 
-import com.carrefour.ingestion.commons.exceptions.RowFormatException
+import com.carrefour.ingestion.commons.bean.{DelimitedFileType, FileFormats}
+import com.carrefour.ingestion.commons.exception.RowFormatException
 import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
 import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -8,11 +9,11 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import org.slf4j.LoggerFactory
 
-object FileLoader extends SparkJob[JobSettingsLoader] {
+object FileLoader extends SparkJob[IngestionSettings] {
 
   val Logger = LoggerFactory.getLogger(getClass)
 
-  override def run(jobSettings: JobSettingsLoader)(implicit sqlContext: SQLContext): Unit = {
+  override def run(jobSettings: IngestionSettings)(implicit sqlContext: SQLContext): Unit = {
     //Getting the metadata for the configuration of the load
     val metadata = IngestionMetadataLoader.loadMetadata(jobSettings)
     //Getting the transformations from the table specified in the settings
