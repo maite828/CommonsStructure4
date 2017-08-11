@@ -1,6 +1,5 @@
-package com.carrefour.ingestion.commons.relational.raw
+package com.carrefour.ingestion.commons.loader
 
-import com.carrefour.ingestion.commons.loader.{DelimitedFileType, FileFormats, IngestionMetadataLoader, JobSettingsLoader}
 import com.carrefour.ingestion.commons.exceptions.RowFormatException
 import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
 import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}
@@ -9,7 +8,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import org.slf4j.LoggerFactory
 
-object RelationalLoaderJob extends SparkJob[JobSettingsLoader] {
+object FileLoader extends SparkJob[JobSettingsLoader] {
 
   val Logger = LoggerFactory.getLogger(getClass)
 

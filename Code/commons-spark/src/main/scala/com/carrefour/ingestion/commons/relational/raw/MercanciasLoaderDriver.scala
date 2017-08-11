@@ -1,7 +1,6 @@
 package com.carrefour.ingestion.commons.relational.raw
 
-import com.carrefour.ingestion.commons.loader.JobSettingsLoader
-import com.carrefour.ingestion.commons.loader.ArgsParser
+import com.carrefour.ingestion.commons.loader.{ArgsParser, FileLoader, JobSettingsLoader}
 import com.carrefour.ingestion.commons.util.SparkUtils
 
 object MercanciasLoaderDriver {
@@ -13,7 +12,7 @@ object MercanciasLoaderDriver {
       settings => {
         //FIXME Replace var in LoaderJobSettiogs case class
         settings.businessunit = "Mercancias"
-        SparkUtils.withHiveContext("Mercancias relational data loader") { implicit sqlContext => RelationalLoaderJob.run(settings) } }
+        SparkUtils.withHiveContext("Mercancias relational data loader") { implicit sqlContext => FileLoader.run(settings) } }
     }
   }
 }
