@@ -11,11 +11,11 @@ case class JobSettingsLoader(
   entity: String = "",
   transformationsTable: String = "",
   numPartitions: Int = 0,
-//  format: FileFormats.FileFormat = FileFormats.GzFormat,
   date: Int = 0,
   year: Int = 0,
   month: Int = 0,
-  day: Int = 0) extends SparkJobSettings
+  day: Int = 0
+) extends SparkJobSettings
 
 object FileFormats {
   sealed trait FileFormat

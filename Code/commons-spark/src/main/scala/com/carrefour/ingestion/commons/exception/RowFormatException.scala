@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.exceptions
+package com.carrefour.ingestion.commons.exception
 
 /**
   * Excepción fatal
