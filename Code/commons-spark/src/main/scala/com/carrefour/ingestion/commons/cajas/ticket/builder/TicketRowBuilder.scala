@@ -2,7 +2,7 @@ package com.carrefour.ingestion.commons.cajas.ticket.builder
 
 import com.carrefour.ingestion.commons.cajas.ticket.TicketInfo
 import com.carrefour.ingestion.commons.util.transform.{FieldInfo, TransformationInfo}
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.sql.types.StructType
 import org.slf4j.LoggerFactory
 
@@ -20,7 +20,7 @@ abstract class TicketRowBuilder(allTransformations: Map[String, Map[String, Tran
 
   final def getSchema: StructType = StructType(fieldsInfo.map(_.schema))
 
-  final def getSchema(database: String, table: String)(sqlContext: SQLContext): StructType = sqlContext.table(s"${database}.${table}").schema
+  final def getSchema(database: String, table: String)(sparkSession: SparkSession): StructType = sparkSession.table(s"${database}.${table}").schema
 
   final def buildRow(ticketInfo: TicketInfo, fields: Seq[String]): Row = {
     var rawFields = Array(ticketInfo.fecha, ticketInfo.tienda, ticketInfo.pos, ticketInfo.num) ++ selectFields(fields, ticketInfo)

@@ -6,4 +6,5 @@ object FileFormats {
   case object TextFormat extends FileFormat
   case object GzFormat extends FileFormat
   case object ZipFormat extends FileFormat
+  case object TarGzFormat extends FileFormat
 }

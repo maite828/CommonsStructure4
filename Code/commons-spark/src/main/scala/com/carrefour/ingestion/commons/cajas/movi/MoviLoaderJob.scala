@@ -5,7 +5,7 @@ import com.carrefour.ingestion.commons.cajas.ticket.TUtils
 import com.carrefour.ingestion.commons.util.SparkJob
 import com.carrefour.ingestion.commons.util.transform.FieldTransformationUtil
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.LoggerFactory
 
 object MoviLoaderJob extends SparkJob[MoviLoaderSettings] {
@@ -16,13 +16,13 @@ object MoviLoaderJob extends SparkJob[MoviLoaderSettings] {
   val CommonSpecificSep = ";"
   val FieldSep = ":"
 
-  override def run(settings: MoviLoaderSettings)(implicit sqlContext: SQLContext): Unit = {
+  override def run(settings: MoviLoaderSettings)(implicit sparkSession: SparkSession): Unit = {
 
     val confFields = MoviRowBuilderUtil.loadFieldsConf(settings.fieldsConfTable)
     val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
 
     // (moviInfo,(commonFields, specificFields))
-    val moviLines: RDD[(MoviInfo, (Seq[String], Seq[String]))] = TUtils.moviFiles(settings)(sqlContext.sparkContext).
+    val moviLines: RDD[(MoviInfo, (Seq[String], Seq[String]))] = TUtils.moviFiles(settings)(sparkSession.sparkContext).
       flatMap { case (file, content) => content.split(RecordSep).map((MoviInfo(file), _)) }.
       mapValues(_.split(CommonSpecificSep, -1)).
       filter { case (moviInfo, line) => line.size > 1 || (line.size == 1 && !line.head.isEmpty) }. // discard empty lines
@@ -34,7 +34,7 @@ object MoviLoaderJob extends SparkJob[MoviLoaderSettings] {
       }.
       mapValues(splits => (splits(0).split(FieldSep, -1), if (splits.size == 2) splits(1).split(FieldSep, -1) else Seq.empty))
 
-    val rowBuilder = sqlContext.sparkContext.broadcast(new MoviRowBuilder(confFields, transformations))
+    val rowBuilder = sparkSession.sparkContext.broadcast(new MoviRowBuilder(confFields, transformations))
 
     val rows = moviLines.map {
       case (moviInfo, (commonFields, specificFields)) =>
@@ -44,7 +44,7 @@ object MoviLoaderJob extends SparkJob[MoviLoaderSettings] {
     }.filter(_.isSuccess).map(_.get)
 
     Logger.debug(s"Schema with ${rowBuilder.value.getSchema.fields.size} fields: ${rowBuilder.value.getSchema.fields.map(sf => sf.name).mkString("||")}")
-    val df = sqlContext.createDataFrame(rows, rowBuilder.value.getSchema)
+    val df = sparkSession.createDataFrame(rows, rowBuilder.value.getSchema)
     df.write.partitionBy(MoviRowBuilder.DatePartField).insertInto(s"${settings.outputDb}.${MoviRowBuilder.TableName}")
 
   }

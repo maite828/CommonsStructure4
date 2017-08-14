@@ -1,7 +1,7 @@
 select bu.businessunit_id, bu.businessunit_name,
        ta.table_id, ta.table_name, ta.schema_name, ta.storeformat, ta.compressiontype, ta.transformationstable, ta.transformationsschema,
        fi.file_id, fi.file_name, fi.parentpath, fi.filemask,
-       ff.fileformat_id, ff.fileformat_type, ff.fielddelimiter, ff.linedelimiter, ff.endswithdelimiter,
+       ff.fileformat_id, ff.fileformat_type, ff.fileformat_format, ff.fielddelimiter, ff.linedelimiter, ff.endswithdelimiter,
        ff.headerlines, ff.datedefaultformat, ff.enclosechar, ff.escapechar
 from config.ingestion_businessunit bu
 left join config.ingestion_table ta on ta.businessunit_id = bu.businessunit_id

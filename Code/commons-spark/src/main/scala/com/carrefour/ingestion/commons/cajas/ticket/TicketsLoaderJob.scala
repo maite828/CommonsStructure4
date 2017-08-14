@@ -2,7 +2,7 @@ package com.carrefour.ingestion.commons.cajas.ticket
 
 import com.carrefour.ingestion.commons.cajas.ticket.builder.TicketRowBuilder
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.LoggerFactory
 import com.carrefour.ingestion.commons.util.SparkJob
 import com.carrefour.ingestion.commons.util.transform.FieldTransformationUtil
@@ -15,14 +15,14 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
   val RecordSep = "\\r?\\n"
   val FieldSep = ":"
 
-  override def run(settings: TicketsLoaderSettings)(implicit sqlContext: SQLContext): Unit = {
+  override def run(settings: TicketsLoaderSettings)(implicit sparkSession: SparkSession): Unit = {
 
-    import sqlContext.implicits._
-    val builders = sqlContext.table(settings.rowBuilderTable).map(r => BuilderSpec(r.getAs("recordtype"), r.getAs("builderclass"))).collect()
+    import sparkSession.implicits._
+    val builders = sparkSession.table(settings.rowBuilderTable).map(r => BuilderSpec(r.getAs("recordtype"), r.getAs("builderclass"))).collect()
 
     val transformations = FieldTransformationUtil.loadTransformations(settings.transformationsTable)
 
-    implicit val sc = sqlContext.sparkContext
+    implicit val sc = sparkSession.sparkContext
 
     // (ticketInfo, recordType, recordFields)
     val tkLines: RDD[(TicketInfo, String, Array[String])] = TUtils.ticketFiles(settings).
@@ -43,7 +43,7 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
           try {
             Logger.debug(s"Schema with ${builder.value.getSchema.fields.size} fields: ${builder.value.getSchema.fields.map(sf => sf.name).mkString("||")}")
 
-            val tkDf = sqlContext.createDataFrame(tkRows, builder.value.getSchema(settings.outputDb, builder.value.tableName)(sqlContext))
+            val tkDf = sparkSession.createDataFrame(tkRows, builder.value.getSchema(settings.outputDb, builder.value.tableName)(sparkSession))
             tkDf.coalesce(8).write.insertInto(s"${settings.outputDb}.${builder.value.tableName}")
           } catch {
             case e: Exception => {

@@ -3,7 +3,7 @@ package com.carrefour.ingestion.commons.loader
 import com.carrefour.ingestion.commons.bean.{DelimitedFileType, FileFormats, FileType, NoFileType}
 import com.carrefour.ingestion.commons.exception.FatalException
 import com.carrefour.ingestion.commons.util.SqlUtils
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 
 case class IngestionMetadata(
                               inputPath: String = "",
@@ -30,11 +30,11 @@ object IngestionMetadataLoader {
   /**
     *
     * @param settings Basic configuration loaded through parameters in the command line.
-    * @param sqlContext
+    * @param sparkSession
     * @return - A dataframe with all the metadata associated to the businessunit specified in settings
     */
 
-  def loadMetadata(settings: IngestionSettings)(implicit sqlContext: SQLContext): Array[IngestionMetadata] = {
+  def loadMetadata(settings: IngestionSettings)(implicit sparkSession: SparkSession): Array[IngestionMetadata] = {
 
     val metadata = if (settings.entity == "")
       SqlUtils.sql("/hql/load_BU_Metadata.hql", settings.businessunit) else
@@ -57,6 +57,7 @@ object IngestionMetadataLoader {
           val filemask: String = row.getAs[String]("filemask")
           val fileformat_id: Int = row.getAs[Int]("fileformat_id")
           val fileformat_type: String = row.getAs[String]("fileformat_type")
+          val fileformat_format: String = row.getAs[String]("fileformat_format")
           val fielddelimiter: String = row.getAs[String]("fielddelimiter")
           val linedelimiter: String = row.getAs[String]("linedelimiter")
           val endswithdelimiter: Boolean = row.getAs[Boolean]("endswithdelimiter")
@@ -67,8 +68,15 @@ object IngestionMetadataLoader {
 
           val numPartitions = if (settings.numPartitions == 0) defaultNumPartitions else settings.numPartitions
 
+          val fileFormat = fileformat_format match {
+            case "TEXT" => FileFormats.TextFormat
+            case "GZ" => FileFormats.GzFormat
+            case "TAR.GZ" => FileFormats.TarGzFormat
+            case "ZIP" => FileFormats.ZipFormat
+          }
+
           val fileType = fileformat_type match {
-            case "DELIMITED" => DelimitedFileType(FileFormats.TextFormat, numPartitions, fielddelimiter, linedelimiter, endswithdelimiter, headerlines, datedefaultformat, enclosechar, escapechar)
+            case "DELIMITED" => DelimitedFileType(fileFormat, numPartitions, fielddelimiter, linedelimiter, endswithdelimiter, headerlines, datedefaultformat, enclosechar, escapechar)
             case "TICKET" => NoFileType()
             case "MOVI" => NoFileType()
           }

@@ -12,7 +12,7 @@ object MarketingLoaderDriver {
       settings => {
         //FIXME Replace var in LoaderJobSettiogs case class
         settings.businessunit = "Marketing"
-        SparkUtils.withHiveContext("Marketing relational data loader") { implicit sqlContext => FileLoader.run(settings) } }
+        SparkUtils.withHiveContext("Marketing relational data loader") { implicit sparkSession => FileLoader.run(settings) } }
     }
   }
 }

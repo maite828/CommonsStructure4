@@ -1,7 +1,6 @@
 package com.carrefour.ingestion.commons.util.transform
 
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.sql.types._
 
 object FieldTransformationUtil {
@@ -16,11 +15,11 @@ object FieldTransformationUtil {
     * Loads the transformations table and build a map with all transformations that can be used with {@link FieldInfo#buildFieldsInfo}.
     * If no table is given, returns an empty map of tranformations.
     */
-  def loadTransformations(transformationsTable: String)(implicit sqlContext: SQLContext): Map[String, Map[String, TransformationInfo]] = {
+  def loadTransformations(transformationsTable: String)(implicit sparkSession: SparkSession): Map[String, Map[String, TransformationInfo]] = {
     if (transformationsTable == null || transformationsTable.isEmpty)
       Map.empty
     else
-      sqlContext.table(transformationsTable).rdd.groupBy(_.getAs[String](TableNameField)).map {
+      sparkSession.table(transformationsTable).rdd.groupBy(_.getAs[String](TableNameField)).map {
         case (table, rows: Iterable[Row]) =>
           table -> rows.map(r =>
             r.getAs[String](FieldNameField) -> TransformationInfo(r.getAs[String](TransformationClassField), r.getAs[String](TransformationArgsField).split(ArgsSep).toSeq)).toMap

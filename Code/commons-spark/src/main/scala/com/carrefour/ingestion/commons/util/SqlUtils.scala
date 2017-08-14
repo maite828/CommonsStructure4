@@ -1,14 +1,16 @@
 package com.carrefour.ingestion.commons.util
 
 import com.carrefour.ingestion.commons.exception.FatalException
-import org.apache.spark.sql.{DataFrame, SQLContext}
-import org.slf4j.LoggerFactory
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.slf4j.{LoggerFactory, Logger}
+
 
 object SqlUtils {
 
   val Logger = LoggerFactory.getLogger(getClass)
 
-  def sql(path: String, args: String*)(implicit sqlContext: SQLContext): Option[DataFrame] = {
+  def sql(path: String, args: String*)(implicit sparkSession: SparkSession): Option[DataFrame] = {
 
     val is = getClass().getResourceAsStream(path)
     if (is == null) {
@@ -23,7 +25,41 @@ object SqlUtils {
     }
 
     Logger.info(s"Hive Query File: $path")
-    Logger.info(s"Hive Query: $query")
-    Some(sqlContext.sql(query));
+    Some(sparkSession.sql(query))
+  }
+
+  def setTableAsExternal(fullTableName: String)(implicit sparkSession: SparkSession): Unit = {
+    val queryFile="/hql/setTableAsExternal.hql"
+    sql(queryFile, fullTableName)
+  }
+
+  def setTableAsInternal(fullTableName: String)(implicit sparkSession: SparkSession): Unit = {
+    val queryFile="/hql/setTableAsInternal.hql"
+    sql(queryFile, fullTableName)
+  }
+
+  def dropPartitionYearMonthDay(fullTableName: String, year: Int, month: Int, day: Int)(implicit sparkSession: SparkSession): Unit = {
+    Logger.info(s"Dropping partition: ${fullTableName}(year=${year}, month=${month}, day=${day})")
+    val queryFile="/hql/dropPartitionYearMonthDay.hql"
+    sql(queryFile, fullTableName, year.toString, month.toString, day.toString)
+  }
+
+  def purgePartitionYearMonthDay(fullTableName: String, year: Int, month: Int, day: Int)(implicit sparkSession: SparkSession): Unit = {
+    Logger.info(s"Purging partition: ${fullTableName}(year=${year}, month=${month}, day=${day})")
+    val locationPath = getPartitionLocationYearMonthDay(fullTableName, year, month, day)
+    val fs = FileSystem.get(sparkSession.sparkContext.hadoopConfiguration)
+    Logger.info(s"Deleting partition folder: $locationPath")
+    fs.delete(new Path(locationPath), true)
+
+    dropPartitionYearMonthDay(fullTableName, year, month, day)
+  }
+
+  def getPartitionLocationYearMonthDay(fullTableName: String, year: Int, month: Int, day: Int)(implicit sparkSession: SparkSession): String = {
+    val queryFile="/hql/describeFormattedPartitionYearMonthDay.hql"
+    sql(queryFile, fullTableName, year.toString, month.toString, day.toString)
+      .get
+      .filter("col_name like 'Location%'")
+      .first()
+      .getAs[String]("data_type")
   }
 }

@@ -1,6 +1,7 @@
 package com.carrefour.ingestion.commons.cajas.movi.builder
 
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 
 object MoviRowBuilderUtil {
   val FieldNameField = "fieldname"
@@ -10,12 +11,12 @@ object MoviRowBuilderUtil {
   /**
    * Loads the fields configuration table and build a sequence of {@link MoviFieldConf}
    */
-  def loadFieldsConf(fieldsConfTable: String)(implicit sqlContext: SQLContext): Seq[MoviFieldConf] = {
-    import sqlContext.sparkSession.implicits._
+  def loadFieldsConf(fieldsConfTable: String)(implicit sparkSession: SparkSession): Seq[MoviFieldConf] = {
+    import sparkSession.implicits._
     if (fieldsConfTable == null || fieldsConfTable.isEmpty)
       Seq.empty
     else
-      sqlContext.table(fieldsConfTable).
+      sparkSession.table(fieldsConfTable).
         map(row => MoviFieldConf(fieldName = row.getAs(FieldNameField),
           fieldOutputPosition = row.getAs(FieldOutputPositionField),
           recordType = row.getAs(RecordTypeField))).

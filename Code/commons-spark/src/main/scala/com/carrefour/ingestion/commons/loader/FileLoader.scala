@@ -6,21 +6,21 @@ import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransform
 import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{Row, SQLContext, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
 
 object FileLoader extends SparkJob[IngestionSettings] {
 
   val Logger = LoggerFactory.getLogger(getClass)
 
-  override def run(jobSettings: IngestionSettings)(implicit sqlContext: SQLContext): Unit = {
+  override def run(jobSettings: IngestionSettings)(implicit sparkSession: SparkSession): Unit = {
     //Getting the metadata for the configuration of the load
     val metadata = IngestionMetadataLoader.loadMetadata(jobSettings)
     //Getting the transformations from the table specified in the settings
     val transformations = FieldTransformationUtil.loadTransformations(jobSettings.transformationsTable)
 
     //Starting files load
-    val fs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
+    val fs = FileSystem.get(sparkSession.sparkContext.hadoopConfiguration)
     metadata.foreach( settings => {
       Logger.info(s"Loading file ${settings.inputPath}")
       val path = new Path(settings.inputPath)
@@ -49,16 +49,16 @@ object FileLoader extends SparkJob[IngestionSettings] {
     * @param outputTable Schema and name of the table where the data will be stored (schema.name).
     * @param transformations Map with the transformations to be applied to the fields.
     * @param fileType Collection of the necessary settings for the file to be loaded.
-    * @param sqlContext SQL Context used for loading the input file from HDFS
+    * @param sparkSession Spark Session used for loading the input file from HDFS
     */
-  def loadDelimitedFile(inputPath: String, outputTable: String, fileType: DelimitedFileType, transformations: Map[String, Map[String, TransformationInfo]], part_date: Int)(implicit sqlContext: SQLContext): Unit = {
+  def loadDelimitedFile(inputPath: String, outputTable: String, fileType: DelimitedFileType, transformations: Map[String, Map[String, TransformationInfo]], part_date: Int)(implicit sparkSession: SparkSession): Unit = {
     val loadYear = part_date.toString.substring(0,4).toInt
     val loadMonth = part_date.toString.substring(4,6).toInt
     val loadDay = part_date.toString.substring(6,8).toInt
     Logger.info(s"Processing file $inputPath to $outputTable for date ${loadYear}${loadMonth}${loadDay}")
     val input = fileType.fileFormat match {
-      case FileFormats.TextFormat => sqlContext.sparkContext.textFile(inputPath, fileType.numPartitions)
-      case FileFormats.GzFormat => sqlContext.sparkContext.textFile(inputPath)
+      case FileFormats.TextFormat => sparkSession.sparkContext.textFile(inputPath, fileType.numPartitions)
+      case FileFormats.GzFormat => sparkSession.sparkContext.textFile(inputPath)
       //FIXME support zip format
       //      case RelationalFormats.ZipFormat => 
       //        sqlContext.sparkContext.hadoopFile(inputPath, classOf[ZipInputFormat], classOf[Text], classOf[Text],
@@ -109,17 +109,20 @@ object FileLoader extends SparkJob[IngestionSettings] {
           }
         })
 
-      Logger.info(s"Dropping existing partition: year=${loadYear}, month=${loadMonth}, day=${loadDay}")
-      SqlUtils.sql("/hql/dropPartitionYearMonthDay.hql",
-        outputTable,
-        loadYear.toString,
-        loadMonth.toString,
-        loadDay.toString)
+//      Logger.info(s"Dropping existing partition: year=${loadYear}, month=${loadMonth}, day=${loadDay}")
+//      SqlUtils.dropPartitionYearMonthDay(
+//        outputTable,
+//        loadYear,
+//        loadMonth,
+//        loadDay)
 
       Logger.info(s"Writing in table $outputTable")
-      val schema = sqlContext.table(outputTable).schema
-      val df = sqlContext.createDataFrame(content, schema)
-      df.repartition(8).write.insertInto(outputTable)
+      val schema = sparkSession.table(outputTable).schema
+      val df = sparkSession.createDataFrame(content, schema)
+      df.repartition(8).write.mode(SaveMode.Overwrite).insertInto(outputTable)
+
+      SqlUtils.purgePartitionYearMonthDay(outputTable, loadYear, loadMonth, 3)
+
     }
     catch {
       case e: Exception =>
@@ -132,8 +135,8 @@ object FileLoader extends SparkJob[IngestionSettings] {
     * Builds the {@link FieldInfo} sequence from the given input RDD and field transformations specification.
     * Field names are taken from Hive Table Definition.
     */
-  def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit sqlContext: SQLContext): Seq[FieldInfo] = {
-    val fieldNames = sqlContext.table(tableName).schema.fields.map(_.name)
+  def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit sparkSession: SparkSession): Seq[FieldInfo] = {
+    val fieldNames = sparkSession.table(tableName).schema.fields.map(_.name)
     FieldInfo.buildFieldsInfo(tableName.split("\\.").last, fieldNames, transformations)
   }
 

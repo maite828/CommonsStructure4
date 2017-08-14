@@ -12,7 +12,7 @@ object MercanciasLoaderDriver {
       settings => {
         //FIXME Replace var in LoaderJobSettiogs case class
         settings.businessunit = "Mercancias"
-        SparkUtils.withHiveContext("Mercancias relational data loader") { implicit sqlContext => FileLoader.run(settings) } }
+        SparkUtils.withHiveContext("Mercancias relational data loader") { implicit sparkSession => FileLoader.run(settings) } }
     }
   }
 }
