@@ -31,8 +31,10 @@ object TUtils {
    * Creates a RDD with the ticket files: (filename, content), according to the given configuration (path, format, partitions).
    * It will only include in the RDD those files that match TicketFileNamePattern.
    */
-  def ticketFiles(settings: TicketsLoaderSettings)(implicit sc: SparkContext): RDD[(String, String)] = {
-    tFiles(settings.inputPath, settings.format, TicketFileNamePattern, settings.numPartitions)
+  def ticketFiles(inputFiles: Array[String], settings: TicketsLoaderSettings)(implicit sc: SparkContext): RDD[(String, String)] = {
+    inputFiles.map(inputFile => {
+      tFiles(inputFile, settings.format, TicketFileNamePattern, settings.numPartitions)
+    }).reduce((left, right) => left ++ right)
   }
 
   /**

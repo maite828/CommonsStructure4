@@ -26,6 +26,7 @@ object SparkUtils {
       .builder()
       .appName(appName)
       .enableHiveSupport()
+      .config("spark.dynamicAllocation.enabled","false")
       .config("hive.exec.dynamic.partition.mode", "nonstrict")
       .config("spark.sql.hive.convertMetastoreParquet", "false")
       .config("hive.exec.max.dynamic.partitions", "100000")
