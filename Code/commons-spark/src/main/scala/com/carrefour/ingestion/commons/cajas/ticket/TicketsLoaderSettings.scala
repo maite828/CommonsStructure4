@@ -4,7 +4,7 @@ import com.carrefour.ingestion.commons.util.SparkJobSettings
 
 import scopt.OptionParser
 
-case class TicketsLoaderSettings(window: Int = 1, inputPath: String = "", outputDb: String = "", rowBuilderTable: String = "", transformationsTable: String = "", numPartitions: Int = 2000, format: TFormats.TFormat = TFormats.TarGzFormat) extends SparkJobSettings
+case class TicketsLoaderSettings(groupSize: Int = -1, window: Int = 1, inputPath: String = "", outputDb: String = "", rowBuilderTable: String = "", transformationsTable: String = "", numPartitions: Int = 2000, format: TFormats.TFormat = TFormats.TarGzFormat) extends SparkJobSettings
 
 /**
  * Parser for the tickets data loader program. Method  {@link #parse} produces a {@link TicketsLoaderSettings} to configure the Spark job.
@@ -13,9 +13,13 @@ object ArgsParser extends OptionParser[TicketsLoaderSettings]("TicketsLoaderDriv
 
   head("Tickets data loader", "1.0")
 
+  opt[String]('g', "groupSize") valueName "<input path>" action { (value, config) =>
+    config.copy(groupSize = value.toInt)
+  } text "Size of the window to load (bytes)"
+
   opt[String]('w', "window") valueName "<input path>" action { (value, config) =>
     config.copy(window = value.toInt)
-  } text "Size of the window to load"
+  } text "Size of the window to load (days)"
 
   opt[String]('i', "input") required () valueName "<input path>" action { (value, config) =>
     config.copy(inputPath = value)

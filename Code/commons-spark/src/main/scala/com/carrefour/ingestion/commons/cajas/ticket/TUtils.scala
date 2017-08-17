@@ -3,11 +3,12 @@ package com.carrefour.ingestion.commons.cajas.ticket
 import java.util.regex.Pattern
 
 import com.carrefour.ingestion.commons.cajas.movi.MoviLoaderSettings
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 import com.carrefour.ingestion.commons.util.ExtractionUtils
+import org.apache.spark.sql.SparkSession
 
 /**
  * Allowed formats for t files (tickets and movi).
@@ -60,4 +61,34 @@ object TUtils {
   }
 
   private[this] def filename(path: String): String = new Path(path).getName
+
+  def getFilesByDay(settings: TicketsLoaderSettings)(sc: SparkContext): List[Array[String]] = {
+    val pattern =  """(.*\d{8})_(\d{4}).*""".r
+
+    FileSystem.get(sc.hadoopConfiguration)
+      .listStatus(new Path(settings.inputPath))
+      .map(x => x.getPath.toString)
+      .map(x => { val pattern(fecha,numTicket) = x
+        fecha})
+      .distinct
+      .map(_ + "*")
+      .grouped(settings.window)
+      .toList
+  }
+
+  def getFilesBySize(settings: TicketsLoaderSettings)(sc: SparkContext): List[Array[String]] = {
+    val fileList = FileSystem.get(sc.hadoopConfiguration).listStatus(new Path(settings.inputPath))
+    val files: Array[Tuple2[String, Long]] = fileList.map(x => Tuple2(x.getPath.toString, x.getLen))
+    var group = 1
+    val indexes = files.scanLeft(Tuple2(0,0))((prev, next) => {val value = prev._1 + next._2.toInt
+      if(value > settings.groupSize){group = group+1
+        Tuple2(next._2.toInt, group)} else Tuple2(value,group)})
+      .map(x => x._2)
+    val groups = files.map(_._1) zip indexes
+    groups
+      .groupBy(x => x._2)
+      .values
+      .toList
+      .map(y => y.map(z => z._1))
+  }
 }
