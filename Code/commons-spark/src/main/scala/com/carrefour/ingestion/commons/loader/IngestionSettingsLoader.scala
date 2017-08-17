@@ -37,7 +37,7 @@ object IngestionSettingsLoader extends OptionParser[IngestionSettings]("Ingestio
     config.copy(date = dateValue, year = yearValue, month = monthValue, day = dayValue)
   } text "Loading date"
 
-  opt[String]('t', "transformations") required () valueName "<transformations_table>" action { (value, config) =>
+  opt[String]('t', "transformations") valueName "<transformations_table>" action { (value, config) =>
     val transformations = value
     config.copy(transformationsTable = transformations)
   } text "Loading date"

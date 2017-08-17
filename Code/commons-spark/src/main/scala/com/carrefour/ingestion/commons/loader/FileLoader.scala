@@ -121,8 +121,6 @@ object FileLoader extends SparkJob[IngestionSettings] {
       val df = sparkSession.createDataFrame(content, schema)
       df.repartition(8).write.mode(SaveMode.Overwrite).insertInto(outputTable)
 
-      SqlUtils.purgePartitionYearMonthDay(outputTable, loadYear, loadMonth, 3)
-
     }
     catch {
       case e: Exception =>
