@@ -7,7 +7,8 @@ import scopt.OptionParser
 case class TicketsLoaderSettings(groupSize: Int = -1, window: Int = 1, inputPath: String = "", outputDb: String = "", rowBuilderTable: String = "", transformationsTable: String = "", numPartitions: Int = 2000, format: TFormats.TFormat = TFormats.TarGzFormat) extends SparkJobSettings
 
 /**
- * Parser for the tickets data loader program. Method  {@link #parse} produces a {@link TicketsLoaderSettings} to configure the Spark job.
+ * Parser for the tickets data loader program.
+ * Method  {@link #parse} produces a {@link TicketsLoaderSettings} to configure the Spark job.
  */
 object ArgsParser extends OptionParser[TicketsLoaderSettings]("TicketsLoaderDriver") {
 

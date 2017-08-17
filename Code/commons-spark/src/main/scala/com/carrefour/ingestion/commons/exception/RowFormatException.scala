@@ -1,7 +1,7 @@
 package com.carrefour.ingestion.commons.exception
 
 /**
-  * Excepción fatal
+  * Fatal exception that will be thrown
   *
   * @param message - mensaje de la excepción
   */
