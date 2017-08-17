@@ -1,5 +1,9 @@
 package com.carrefour.ingestion.commons.util.transform
 
+import java.sql.Timestamp
+
+import com.carrefour.ingestion.commons.exception.RowFormatException
+import com.carrefour.ingestion.commons.loader.{IngestionMetadata, IngestionSettings}
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.sql.types._
 
@@ -25,39 +29,42 @@ object FieldTransformationUtil {
             r.getAs[String](FieldNameField) -> TransformationInfo(r.getAs[String](TransformationClassField), r.getAs[String](TransformationArgsField).split(ArgsSep).toSeq)).toMap
       }.collect.toMap
   }
-  def applySchema(fields: Tuple2[Seq[String], Int], structType: StructType): Tuple2[Seq[Any], Int] = {
+
+  def applySchema(fields: Seq[Any], structType: StructType, settings: IngestionMetadata): Seq[Any] = {
 
     var i = 0
-    val result = new Array[Any](structType.size)
-    if (fields._1.size != structType.size){
-      (fields._1, -1)
-    }else{
-      try{
-        for(structField <- structType){
-          structField.dataType match{
-            case DoubleType =>
-              result(i) = if (fields._1(i).toString.isEmpty || fields._1(i).toString.equalsIgnoreCase("null")) null else fields._1(i).toDouble
-            case IntegerType =>
-              result(i) = if (fields._1(i).toString.isEmpty || fields._1(i).toString.equalsIgnoreCase("null")) null else fields._1(i).toInt
-            case LongType =>
-              result(i) = if (fields._1(i).toString.isEmpty || fields._1(i).toString.equalsIgnoreCase("null")) null else fields._1(i).toLong
-            case ShortType =>
-              result(i) = if (fields._1(i).toString.isEmpty || fields._1(i).toString.equalsIgnoreCase("null")) null else fields._1(i).toShort
-            case BooleanType =>
-              result(i) = if (fields._1(i).toString.isEmpty || fields._1(i).toString.equalsIgnoreCase("null")) null else fields._1(i).toBoolean
-            case DecimalType() =>
-              result(i) = if (fields._1(i).toString.isEmpty || fields._1(i).toString.equalsIgnoreCase("null")) null else new java.math.BigDecimal(fields._1(i))
-            case _ =>
-              result(i) = fields._1(i)
+    if (fields.size != structType.size) {
+      throw new RowFormatException("Error when applying type conversion to data. Number of input fields does not match the structure loaded from the table.")
+    } else {
+    val f = fields zip structType.fields
+    val converted = f.map(x => {
+        
+        (x._1, x._2.dataType) match {
+          case (field:String, DoubleType) =>
+            if (fields(i).toString.isEmpty || fields(i).toString.equalsIgnoreCase("null")) null else field.trim.toDouble
+          case (field:String, IntegerType) =>
+            if (fields(i).toString.isEmpty || fields(i).toString.equalsIgnoreCase("null")) null else field.trim.toInt
+          case (field:String, LongType) =>
+            if (fields(i).toString.isEmpty || fields(i).toString.equalsIgnoreCase("null")) null else field.trim.toLong
+          case (field:String, ShortType) =>
+            if (fields(i).toString.isEmpty || fields(i).toString.equalsIgnoreCase("null")) null else field.trim.toShort
+          case (field:String, BooleanType) =>
+            if (fields(i).toString.isEmpty || fields(i).toString.equalsIgnoreCase("null")) null else field.trim.toBoolean
+          case (field:String, DecimalType()) =>
+            if (fields(i).toString.isEmpty || fields(i).toString.equalsIgnoreCase("null")) null else new java.math.BigDecimal(field.trim)
+          case (field:String, TimestampType) => {
+            val format = new java.text.SimpleDateFormat(settings.timestampFormat)
+            new Timestamp(format.parse(field.trim).getTime)
           }
-          i = i+1;
+          case (field:String, _) =>
+            field.trim
+          case _ =>
+            x._1
         }
-      }catch{
-        case t: Throwable =>
-          (fields._1, -2)
-      }
+
+      }).toArray
+      converted
     }
-    (result, fields._2)
   }
 }
 
