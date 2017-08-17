@@ -9,7 +9,6 @@ import scopt.OptionParser
 case class IngestionSettings(
   var businessunit: String = "",
   entity: String = "",
-  transformationsTable: String = "",
   numPartitions: Int = 0,
   date: Int = 0,
   year: Int = 0,
@@ -35,11 +34,6 @@ object IngestionSettingsLoader extends OptionParser[IngestionSettings]("Ingestio
     val monthValue=value.substring(4,6).toInt
     val dayValue=value.substring(6,8).toInt
     config.copy(date = dateValue, year = yearValue, month = monthValue, day = dayValue)
-  } text "Loading date"
-
-  opt[String]('t', "transformations") valueName "<transformations_table>" action { (value, config) =>
-    val transformations = value
-    config.copy(transformationsTable = transformations)
   } text "Loading date"
 
   opt[String]('p', "partitions") valueName "<num partitions>" action { (value, config) =>

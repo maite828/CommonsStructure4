@@ -3,6 +3,9 @@ package com.carrefour.ingestion.commons.cajas.ticket
 import com.carrefour.ingestion.commons.util.SparkUtils
 import org.apache.spark.sql.SparkSession
 
+/**
+  * Specific driver for the ingestion of the ticket entity.
+  */
 object TicketsLoaderDriver {
 
   def main(args: Array[String]): Unit = {
