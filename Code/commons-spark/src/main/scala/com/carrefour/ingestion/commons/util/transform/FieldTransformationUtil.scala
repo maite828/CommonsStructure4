@@ -40,21 +40,23 @@ object FieldTransformationUtil {
     val converted = f.map(x => {
         
         (x._1, x._2.dataType) match {
-          case (field:String, DoubleType) =>
-            if (field.isEmpty || field.equalsIgnoreCase("null")) null else field.trim.toDouble
-          case (field:String, IntegerType) =>
-            if (field.isEmpty || field.equalsIgnoreCase("null")) null else field.trim.toInt
-          case (field:String, LongType) =>
-            if (field.isEmpty || field.equalsIgnoreCase("null")) null else field.trim.toLong
-          case (field:String, ShortType) =>
-            if (field.isEmpty || field.equalsIgnoreCase("null")) null else field.trim.toShort
-          case (field:String, BooleanType) =>
-            if (field.isEmpty || field.equalsIgnoreCase("null")) null else field.trim.toBoolean
-          case (field:String, DecimalType()) =>
-            if (field.isEmpty || field.equalsIgnoreCase("null")) null else new java.math.BigDecimal(field.trim)
-          case (field:String, TimestampType) =>
-            val format = new java.text.SimpleDateFormat(settings.timestampFormat)
-            new Timestamp(format.parse(field.trim).getTime)
+          case (field: String, DoubleType) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toDouble
+          case (field: String, IntegerType) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toInt
+          case (field: String, LongType) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toLong
+          case (field: String, ShortType) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toShort
+          case (field: String, BooleanType) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toBoolean
+          case (field: String, DecimalType()) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else new java.math.BigDecimal(field.trim)
+          case (field: String, TimestampType) =>
+            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else {
+              val format = new java.text.SimpleDateFormat(settings.timestampFormat)
+              new Timestamp(format.parse(field.trim).getTime)
+            }
           case (field:String, _) =>
             field.trim
           case _ =>
