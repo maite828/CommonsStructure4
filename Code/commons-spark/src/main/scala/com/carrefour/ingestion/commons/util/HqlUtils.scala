@@ -99,8 +99,11 @@ object HqlUtils {
   def transformType(fieldType: String):String = {
     fieldType match{
       case str: String if str.equalsIgnoreCase("char") => "string"
+      case str: String if str.equalsIgnoreCase("varchar2") => "string"
       case str: String if str.equalsIgnoreCase("date") => "timestamp"
       case str: String if str.equalsIgnoreCase("number") => "decimal"
+      case str: String if str.equalsIgnoreCase("decimal") => "int"
+      case str: String if str.equalsIgnoreCase("integer") => "string"
       case unknown => throw new IllegalArgumentException(s"Unknown type: $unknown")
     }
   }
