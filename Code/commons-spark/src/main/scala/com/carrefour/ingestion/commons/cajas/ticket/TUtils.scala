@@ -62,6 +62,14 @@ object TUtils {
 
   private[this] def filename(path: String): String = new Path(path).getName
 
+  /**
+    * Method to get the names of the files to be ingested.
+    * The files will be grouped in blocks of N days, where N is specified by the parameter settings.window
+    *
+    * @param settings Settings for the ingestion of the ticket entity. Needed for the input path and the size of the window in days.
+    * @param sc SparkContext needed for accessing HDFS.
+    * @return A List of Array's containing the file names, already grouped in blocks of days
+    */
   def getFilesByDay(settings: TicketsLoaderSettings)(sc: SparkContext): List[Array[String]] = {
     val pattern =  """(.*\d{8})_(\d{4}).*""".r
 
@@ -76,6 +84,14 @@ object TUtils {
       .toList
   }
 
+  /**
+    * Method to get the names of the files to be ingested.
+    * The files will be grouped in blocks of a maximum size N in bytes, where N is specified by the parameter settings.groupSize
+    *
+    * @param settings Settings for the ingestion of the ticket entity. Needed for the input path and the size of the window in days.
+    * @param sc SparkContext needed for accessing HDFS.
+    * @return A List of Array's containing the file names, already grouped in blocks of a maximum size
+    */
   def getFilesBySize(settings: TicketsLoaderSettings)(sc: SparkContext): List[Array[String]] = {
     val fileList = FileSystem.get(sc.hadoopConfiguration).listStatus(new Path(settings.inputPath))
     val files: Array[Tuple2[String, Long]] = fileList.map(x => Tuple2(x.getPath.toString, x.getLen))

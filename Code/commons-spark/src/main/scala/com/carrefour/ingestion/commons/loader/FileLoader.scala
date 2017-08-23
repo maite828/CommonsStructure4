@@ -9,18 +9,28 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
 
+/**
+  * Generic file loader job.
+  */
 object FileLoader extends SparkJob[IngestionSettings] {
 
   val Logger = LoggerFactory.getLogger(getClass)
 
+  /**
+    * Main method for the ingestion of the files.
+    *
+    * @param jobSettings Previously loaded settings through the command line that will be used for the ingestion
+    * @param sparkSession
+    */
   override def run(jobSettings: IngestionSettings)(implicit sparkSession: SparkSession): Unit = {
     //Getting the metadata for the configuration of the load
     val metadata = IngestionMetadataLoader.loadMetadata(jobSettings)
     //Getting the transformations from the table specified in the settings
-    val transformations = FieldTransformationUtil.loadTransformations(jobSettings.transformationsTable)
+    //val transformations = FieldTransformationUtil.loadTransformations(jobSettings.transformationsTable)
 
     //Starting files load
     val fs = FileSystem.get(sparkSession.sparkContext.hadoopConfiguration)
+    //The ingestion process will be run for each file found in the metadata configuration
     metadata.foreach( settings => {
       Logger.info(s"Loading file ${settings.inputPath}")
       val path = new Path(settings.inputPath)
@@ -30,35 +40,23 @@ object FileLoader extends SparkJob[IngestionSettings] {
         Logger.error(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
         throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
       }
-
-      val fullOutputTable = s"${settings.outputDb}.${settings.outputTable}"
-
+      // A specific load process will be used depending on the file type
       settings.fileType match {
-        case dft: DelimitedFileType => loadDelimitedFile (settings.inputPath, fullOutputTable, dft, transformations, settings.date)
+        case dft: DelimitedFileType => loadDelimitedFile ( dft, settings)
 
       }
     })
   }
 
-  /**
-    * Loads the file in the given path into a table in the output DB,
-    * applying the given field transformations. Output table name will be given
-    * by the file name and field names by the file header.
-    *
-    * @param inputPath Path of the file to be loaded.
-    * @param outputTable Schema and name of the table where the data will be stored (schema.name).
-    * @param transformations Map with the transformations to be applied to the fields.
-    * @param fileType Collection of the necessary settings for the file to be loaded.
-    * @param sparkSession Spark Session used for loading the input file from HDFS
-    */
-  def loadDelimitedFile(inputPath: String, outputTable: String, fileType: DelimitedFileType, transformations: Map[String, Map[String, TransformationInfo]], part_date: Int)(implicit sparkSession: SparkSession): Unit = {
-    val loadYear = part_date.toString.substring(0,4).toInt
-    val loadMonth = part_date.toString.substring(4,6).toInt
-    val loadDay = part_date.toString.substring(6,8).toInt
-    Logger.info(s"Processing file $inputPath to $outputTable for date ${loadYear}${loadMonth}${loadDay}")
+  def loadDelimitedFile(fileType: DelimitedFileType, settings: IngestionMetadata)(implicit sparkSession: SparkSession): Unit = {
+    val loadYear = settings.date.toString.substring(0,4).toInt
+    val loadMonth = settings.date.toString.substring(4,6).toInt
+    val loadDay = settings.date.toString.substring(6,8).toInt
+    val outputTable = s"${settings.outputDb}.${settings.outputTable}"
+    Logger.info(s"Processing file ${settings.inputPath} to $outputTable for date ${loadYear}${loadMonth}${loadDay}")
     val input = fileType.fileFormat match {
-      case FileFormats.TextFormat => sparkSession.sparkContext.textFile(inputPath, fileType.numPartitions)
-      case FileFormats.GzFormat => sparkSession.sparkContext.textFile(inputPath)
+      case FileFormats.TextFormat => sparkSession.sparkContext.textFile(settings.inputPath, fileType.numPartitions)
+      case FileFormats.GzFormat => sparkSession.sparkContext.textFile(settings.inputPath)
       //FIXME support zip format
       //      case RelationalFormats.ZipFormat => 
       //        sqlContext.sparkContext.hadoopFile(inputPath, classOf[ZipInputFormat], classOf[Text], classOf[Text],
@@ -72,10 +70,10 @@ object FileLoader extends SparkJob[IngestionSettings] {
         throw new IllegalArgumentException(s"Unsupported format $f. Supported formats are: text, gz.")
     }
 
-    val fieldsInfo = extractFieldsInfo(input, outputTable, transformations)
+    //val fieldsInfo = extractFieldsInfo(input, outputTable, transformations)
 
     // Transformation and write
-    Logger.info(s"Inserting in table $outputTable with fields: ${fieldsInfo.map(_.field).mkString(",")}")
+    //Logger.info(s"Inserting in table $outputTable with fields: ${fieldsInfo.map(_.field).mkString(",")}")
     try {
       val contentRaw = if (fileType.headerLines > 0)
       // discard header
@@ -92,36 +90,29 @@ object FileLoader extends SparkJob[IngestionSettings] {
         // split fields
         map(_.split(fileType.fieldDelimiter, -1))
 
+
+      val schema = sparkSession.table(outputTable).schema
       // mark bad records and apply transformations
+
       val content = regs.
         map(fields => {
           //FIXME Test fields length properly
-          if (fields.length == fieldsInfo.length - 3) {
+          /*if (fields.length == fieldsInfo.length - 3) {
             val transField = (fields zip fieldsInfo).
               map {
                 case (fieldValue, fieldInfo) => fieldInfo.transformation.transform(fieldValue, fieldInfo.transformationArgs: _*)
               }
             // add partition fields and generate Row
+
             Row(transField ++ Array(loadYear, loadMonth, loadDay) :_*)
-          } else {
-            //TODO Continue execution if there is more entities to load
-            throw new RowFormatException(s"Row length error. RDD length = ${fields.length} -- Table Row Length = ${fieldsInfo.length - 3}. Row: ${fields.mkString(";")}")
-          }
+            */
+
+          Row(FieldTransformationUtil.applySchema(fields ++ Array(loadYear, loadMonth, loadDay), schema,settings) :_*)
         })
 
-//      Logger.info(s"Dropping existing partition: year=${loadYear}, month=${loadMonth}, day=${loadDay}")
-//      SqlUtils.dropPartitionYearMonthDay(
-//        outputTable,
-//        loadYear,
-//        loadMonth,
-//        loadDay)
-
       Logger.info(s"Writing in table $outputTable")
-      val schema = sparkSession.table(outputTable).schema
       val df = sparkSession.createDataFrame(content, schema)
       df.repartition(8).write.mode(SaveMode.Overwrite).insertInto(outputTable)
-
-      SqlUtils.purgePartitionYearMonthDay(outputTable, loadYear, loadMonth, 3)
 
     }
     catch {

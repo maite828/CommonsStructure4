@@ -9,6 +9,9 @@ import com.carrefour.ingestion.commons.util.transform.FieldTransformationUtil
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.storage.StorageLevel
 
+/**
+  * Specific loader job for the ingestion of the ticket entity
+  */
 object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
 
   val Logger = LoggerFactory.getLogger(getClass)
@@ -28,7 +31,7 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
     // (ticketInfo, recordType, recordFields)
     val pattern =  """(.*\d{8})_(\d{4}).*""".r
 
-    val fileList:List[Array[String]] =
+    val fileList: List[Array[String]] =
       if(settings.groupSize == -1) TUtils.getFilesByDay(settings)(sc)
       else TUtils.getFilesBySize(settings)(sc)
 
@@ -52,7 +55,10 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
               Logger.debug(s"Schema with ${builder.value.getSchema.fields.size} fields: ${builder.value.getSchema.fields.map(sf => sf.name).mkString("||")}")
 
               val tkDf = sparkSession.createDataFrame(tkRows, builder.value.getSchema(settings.outputDb, builder.value.tableName)(sparkSession))
-              tkDf.coalesce(8).write.insertInto(s"${settings.outputDb}.${builder.value.tableName}")
+              tkDf.
+                coalesce(8).
+                write.
+                insertInto(s"${settings.outputDb}.${builder.value.tableName}")
             } catch {
               case e: Exception => {
                 Logger.info(s"Tried to insert row with schema= ${builder.value.getSchema}")
