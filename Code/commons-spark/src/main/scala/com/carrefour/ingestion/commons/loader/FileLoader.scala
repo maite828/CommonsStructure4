@@ -1,26 +1,25 @@
 package com.carrefour.ingestion.commons.loader
 
 import com.carrefour.ingestion.commons.bean.{DelimitedFileType, FileFormats}
-import com.carrefour.ingestion.commons.exception.RowFormatException
+import com.carrefour.ingestion.commons.util.SparkJob
 import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
-import com.carrefour.ingestion.commons.util.{SparkJob, SqlUtils}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SQLContext, SaveMode, SparkSession}
-import org.slf4j.LoggerFactory
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Generic file loader job.
   */
 object FileLoader extends SparkJob[IngestionSettings] {
 
-  val Logger = LoggerFactory.getLogger(getClass)
+  val Logger:Logger = LoggerFactory.getLogger(getClass)
 
   /**
     * Main method for the ingestion of the files.
     *
     * @param jobSettings Previously loaded settings through the command line that will be used for the ingestion
-    * @param sparkSession
+    * @param sparkSession SparkSession
     */
   override def run(jobSettings: IngestionSettings)(implicit sparkSession: SparkSession): Unit = {
     //Getting the metadata for the configuration of the load
@@ -53,7 +52,7 @@ object FileLoader extends SparkJob[IngestionSettings] {
     val loadMonth = settings.date.toString.substring(4,6).toInt
     val loadDay = settings.date.toString.substring(6,8).toInt
     val outputTable = s"${settings.outputDb}.${settings.outputTable}"
-    Logger.info(s"Processing file ${settings.inputPath} to $outputTable for date ${loadYear}${loadMonth}${loadDay}")
+    Logger.info(s"Processing file ${settings.inputPath} to $outputTable for date $loadYear$loadMonth$loadDay")
     val input = fileType.fileFormat match {
       case FileFormats.TextFormat => sparkSession.sparkContext.textFile(settings.inputPath, fileType.numPartitions)
       case FileFormats.GzFormat => sparkSession.sparkContext.textFile(settings.inputPath)
@@ -86,7 +85,7 @@ object FileLoader extends SparkJob[IngestionSettings] {
 
       val regs = (if (fileType.fileFormat == FileFormats.GzFormat) repartition(contentRaw, fileType.numPartitions) else contentRaw).
         // filter empty records
-        filter(!_.isEmpty()).
+        filter(!_.isEmpty).
         // split fields
         map(_.split(fileType.fieldDelimiter, -1))
 
@@ -123,7 +122,7 @@ object FileLoader extends SparkJob[IngestionSettings] {
   }
 
   /**
-    * Builds the {@link FieldInfo} sequence from the given input RDD and field transformations specification.
+    * Builds the FieldInfo sequence from the given input RDD and field transformations specification.
     * Field names are taken from Hive Table Definition.
     */
   def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]])(implicit sparkSession: SparkSession): Seq[FieldInfo] = {
@@ -132,7 +131,7 @@ object FileLoader extends SparkJob[IngestionSettings] {
   }
 
   /**
-    * Repartitions the RDD if numPartitions > 0
+    * This method performs a repartition of the RDD if numPartitions > 0
     */
   def repartition[T](rdd: RDD[T], partitions: Int): RDD[T] = if (partitions > 0) rdd.repartition(partitions) else rdd
 

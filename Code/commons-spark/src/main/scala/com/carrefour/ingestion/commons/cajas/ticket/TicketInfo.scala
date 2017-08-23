@@ -1,7 +1,8 @@
 package com.carrefour.ingestion.commons.cajas.ticket
 
 import java.util.regex.Pattern
-import org.slf4j.LoggerFactory
+
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Class that contains metadata or common information to all the tickets, despite its type
@@ -19,9 +20,9 @@ case class TicketInfo(fecha: String, tienda: String, pos: String, num: String, t
 
 object TicketInfo {
 
-  val Logger = LoggerFactory.getLogger(getClass)
+  val Logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val TicketFilenamePattern = Pattern.compile("(?<fecha>\\d{8})_(?<tienda>[\\d\\w]{4})_t(?<num>\\d{6})(?<tipo>\\w)\\.(?<pos>[\\d\\w]{3})")
+  val TicketFilenamePattern: Pattern = Pattern.compile("(?<fecha>\\d{8})_(?<tienda>[\\d\\w]{4})_t(?<num>\\d{6})(?<tipo>\\w)\\.(?<pos>[\\d\\w]{3})")
 
   /**
     * This method will build a new TicketInfo based on the ticket file to be ingested.
@@ -31,7 +32,7 @@ object TicketInfo {
     * @return A new TicketInfo with its correspondent information.
     * @throws IllegalArgumentException When the ticket file name doesn't adjust to a valid structure
     */
-  def apply(filename: String) = {
+  def apply(filename: String): TicketInfo = {
     val matcher = TicketFilenamePattern.matcher(filename)
     if (!matcher.matches()) {
       Logger.error(s"Unrecongnized ticket file name: $filename")

@@ -20,7 +20,7 @@ object FieldInfo {
    * <li>The transformation for the field (no table specified)</li>
    * <li>The default transformation (no table nor field specified)</li>
    * </ul>
-   * If none of the above is defined, default transformation is {@link NopTransformation}, which produces as ouput the same String given as input.
+   * If none of the above is defined, default transformation is `NopTransformation`, which produces as ouput the same String given as input.
    *
    * @param tableName Name of the table
    * @param fieldNames Ordered list of field names

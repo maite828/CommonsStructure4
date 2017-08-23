@@ -1,17 +1,18 @@
 package com.carrefour.ingestion.commons.util.transform
 
 import java.text.ParseException
+
 import org.apache.spark.sql.types.StringType
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
  * Formats the date string.
  */
 object DateTransformation extends FieldTransformation {
 
-  private val Logger = LoggerFactory.getLogger(getClass)
+  private val Logger: Logger = LoggerFactory.getLogger(getClass)
 
-  override def transform(field: String, args: String*) = {
+  override def transform(field: String, args: String*):String = {
     if (isNullOrEmpty(field))
       null
     else {
@@ -20,10 +21,10 @@ object DateTransformation extends FieldTransformation {
       try {
         outputFormat.format(inputFormat.parse(field))
       } catch {
-        case e: ParseException => {
+        case _: ParseException =>
           Logger.warn(s"Error parsing date $field")
           null
-        }
+
       }
     }
   }

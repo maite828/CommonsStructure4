@@ -8,7 +8,7 @@ case class TicketsLoaderSettings(groupSize: Int = -1, window: Int = 1, inputPath
 
 /**
  * Parser for the tickets data loader program.
- * Method  {@link #parse} produces a {@link TicketsLoaderSettings} to configure the Spark job.
+ * Method  `#parse` produces a `TicketsLoaderSettings` to configure the Spark job.
  */
 object ArgsParser extends OptionParser[TicketsLoaderSettings]("TicketsLoaderDriver") {
 

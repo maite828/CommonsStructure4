@@ -3,13 +3,12 @@ package com.carrefour.ingestion.commons.loader
 import com.carrefour.ingestion.commons.bean.{DelimitedFileType, FileFormats, FileType, NoFileType}
 import com.carrefour.ingestion.commons.exception.FatalException
 import com.carrefour.ingestion.commons.util.SqlUtils
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.SparkSession
 
 case class IngestionMetadata(
                               inputPath: String = "",
                               outputDb: String = "",
                               outputTable: String = "",
-                              transformationsTable: String = "",
                               fileType: FileType,
                               timestampFormat: String = "",
                               date: Int = 0,
@@ -21,7 +20,7 @@ case class IngestionMetadata(
 
 
 /**
- * Parser for the relational data loader program. Method  {@link #parse} produces a {@link RelationalJobSettings}
+ * Parser for the relational data loader program. Method  #parse produces a RelationalJobSettings
  * to configure the Spark job.
  */
 object IngestionMetadataLoader {
@@ -31,7 +30,7 @@ object IngestionMetadataLoader {
   /**
     *
     * @param settings Basic configuration loaded through parameters in the command line.
-    * @param sparkSession
+    * @param sparkSession SparkSession
     * @return - A dataframe with all the metadata associated to the businessunit specified in settings
     */
 
@@ -41,22 +40,22 @@ object IngestionMetadataLoader {
       SqlUtils.sql("/hql/load_BU_Metadata.hql", settings.businessunit) else
       SqlUtils.sql("/hql/load_Entity_Metadata.hql", settings.businessunit, settings.entity)
     metadata match{
-      case Some(metadata) =>
-        metadata.collect.map(row => {
-          val businessunit_id: Int = row.getAs[Int]("businessunit_id")
-          val businessunit_name: String = row.getAs[String]("businessunit_name")
-          val table_id: Int = row.getAs[Int]("table_id")
+      case Some(metadat) =>
+        metadat.collect.map(row => {
+          //val businessunit_id: Int = row.getAs[Int]("businessunit_id")
+          //val businessunit_name: String = row.getAs[String]("businessunit_name")
+          //val table_id: Int = row.getAs[Int]("table_id")
           val table_name: String = row.getAs[String]("table_name")
           val schema_name: String = row.getAs[String]("schema_name")
-          val storeformat: String = row.getAs[String]("storeformat")
-          val compressiontype: String = row.getAs[String]("compressiontype")
-          val transformationstable: String = row.getAs[String]("transformationstable")
-          val transformationsschema: String = row.getAs[String]("transformationsschema")
-          val file_id: Int = row.getAs[Int]("file_id")
-          val file_name: String = row.getAs[String]("file_name")
+          //val storeformat: String = row.getAs[String]("storeformat")
+          //val compressiontype: String = row.getAs[String]("compressiontype")
+          //val transformationstable: String = row.getAs[String]("transformationstable")
+          //val transformationsschema: String = row.getAs[String]("transformationsschema")
+          //val file_id: Int = row.getAs[Int]("file_id")
+          //val file_name: String = row.getAs[String]("file_name")
           val parentpath: String = row.getAs[String]("parentpath")
           val filemask: String = row.getAs[String]("filemask")
-          val fileformat_id: Int = row.getAs[Int]("fileformat_id")
+          //val fileformat_id: Int = row.getAs[Int]("fileformat_id")
           val fileformat_type: String = row.getAs[String]("fileformat_type")
           val fileformat_format: String = row.getAs[String]("fileformat_format")
           val fielddelimiter: String = row.getAs[String]("fielddelimiter")
@@ -84,10 +83,9 @@ object IngestionMetadataLoader {
 
           //FIXME no mapear -> nuevo objeto con lo necesario
           IngestionMetadata(
-            s"${parentpath}/${filemask}",
+            s"$parentpath/$filemask",
             schema_name,
             table_name,
-            transformationsschema + "." + transformationstable,
             fileType,
             datedefaultformat,
             settings.date,

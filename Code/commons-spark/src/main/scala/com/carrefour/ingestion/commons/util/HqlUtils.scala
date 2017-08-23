@@ -41,7 +41,7 @@ object HqlUtils {
     this:fieldCC =>
     override def toString: String = {
       val typ: String = transformType(typeName)
-      typ + (if(typeHasArgs(typ) && !typeArgs.isEmpty) s"(${typeArgs})" else "")
+      typ + (if(typeHasArgs(typ) && !typeArgs.isEmpty) s"($typeArgs)" else "")
     }
   }
 
@@ -111,8 +111,8 @@ object HqlUtils {
     if (settings.isExternal)
       builder.append("EXTERNAL ")
     builder.append(s"TABLE `${settings.outputSchema}`.`${settings.outputTable}`")
-    builder.append(table.fields.filter(field => !(field.isPartition)).mkString("(\n", ",\n", ")\n"))
-    if (!(table.fields.filter(_.isPartition).isEmpty)) {
+    builder.append(table.fields.filter(field => !field.isPartition).mkString("(\n", ",\n", ")\n"))
+    if (table.fields.exists(_.isPartition)) {
       builder.append("PARTITIONED BY ")
       builder.append(table.fields.filter(_.isPartition).mkString("(\n", ",\n", ")\n"))
     }
@@ -149,11 +149,11 @@ object HqlUtils {
       config.copy(outputTable = tableValue)
     } text "Name of the output table"
 
-    opt[Unit]('h',"header") action{ (value, config) =>
+    opt[Unit]('h',"header") action{ (_, config) =>
       config.copy(hasHeader = true)
     } text "This parameter specifies that the input file has a header."
 
-    opt[Unit]('e',"external") action{ (value, config) =>
+    opt[Unit]('e',"external") action{ (_, config) =>
       config.copy(isExternal = true)
     } text "This parameter specifies that the table is to be created as external."
 
@@ -167,9 +167,9 @@ object HqlUtils {
       try {
         config.copy(nameCol = nameValue.toInt)
       }catch{
-        case e: Exception => {
+        case _: Exception =>
           throw new IllegalArgumentException(s"Specified name column is not valid: $nameValue")
-        }
+
       }
     } text "Index of the column that contains the name of the fields (Note that the first column has the index 0)."
 
@@ -178,9 +178,9 @@ object HqlUtils {
       try {
         config.copy(typeCol = typeValue.toInt)
       }catch{
-        case e: Exception => {
+        case _: Exception =>
           throw new IllegalArgumentException(s"Specified type column is not valid: $typeValue")
-        }
+
       }
     } text "Index of the column that contains the type of the fields (Note that the first column has the index 0)."
 
@@ -189,9 +189,9 @@ object HqlUtils {
       try {
         config.copy(typeArgsCol = typeArgsValue.toInt)
       }catch{
-        case e: Exception => {
+        case _: Exception =>
           throw new IllegalArgumentException(s"Specified type argument column is not valid: $typeArgsValue")
-        }
+
       }
     } text "Index of the column that contains the type of the fields (Note that the first column has the index 0)."
 
@@ -200,9 +200,9 @@ object HqlUtils {
       try {
         config.copy(descCol = descValue.toInt)
       }catch{
-        case e: Exception => {
+        case _: Exception =>
           throw new IllegalArgumentException(s"Specified description column is not valid: $descValue")
-        }
+
       }
     } text "Index of the column that contains the description of the fields (Note that the first column has the index 0)."
 
@@ -211,9 +211,9 @@ object HqlUtils {
       try {
         config.copy(partitionCol = partitionValue.toInt)
       }catch{
-        case e: Exception => {
+        case _: Exception =>
           throw new IllegalArgumentException(s"Specified partition column is not valid: $partitionValue")
-        }
+
       }
     } text "Index of the flag column which specifies if that field is a partitioning field (Note that the first column has the index 0)."
 

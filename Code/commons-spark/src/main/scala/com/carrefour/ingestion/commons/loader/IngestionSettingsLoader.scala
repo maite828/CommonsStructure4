@@ -17,7 +17,7 @@ case class IngestionSettings(
 ) extends SparkJobSettings
 
 /**
- * Parser for the relational data loader program. Method  {@link #parse} produces a {@link JobSettings} to configure the Spark job.
+ * Parser for the relational data loader program. Method  `#parse` produces a `JobSettings` to configure the Spark job.
  */
 object IngestionSettingsLoader extends OptionParser[IngestionSettings]("IngestionJobSettings") {
 

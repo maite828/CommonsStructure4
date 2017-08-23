@@ -7,7 +7,10 @@ import org.apache.spark.sql.types.StringType
  */
 object TrimTransformation extends FieldTransformation {
 
-  override def transform(field: String, args: String*) = if (field == null) null else field.trim()
+  override def transform(field: String, args: String*): String = {
+    if (field == null) null
+    else field.trim()
+  }
 
   override def outputType(args: String*) = StringType
 }

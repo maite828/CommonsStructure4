@@ -1,20 +1,19 @@
 package com.carrefour.ingestion.commons.cajas.ticket
 
 import com.carrefour.ingestion.commons.cajas.ticket.builder.TicketRowBuilder
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{SQLContext, SparkSession}
-import org.slf4j.LoggerFactory
 import com.carrefour.ingestion.commons.util.SparkJob
 import com.carrefour.ingestion.commons.util.transform.FieldTransformationUtil
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Specific loader job for the ingestion of the ticket entity
   */
 object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
 
-  val Logger = LoggerFactory.getLogger(getClass)
+  val Logger:Logger = LoggerFactory.getLogger(getClass)
 
   val RecordSep = "\\r?\\n"
   val FieldSep = ":"
@@ -28,9 +27,6 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
 
     implicit val sc = sparkSession.sparkContext
 
-    // (ticketInfo, recordType, recordFields)
-    val pattern =  """(.*\d{8})_(\d{4}).*""".r
-
     val fileList: List[Array[String]] =
       if(settings.groupSize == -1) TUtils.getFilesByDay(settings)(sc)
       else TUtils.getFilesBySize(settings)(sc)
@@ -41,7 +37,7 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
             flatMap { case (filename, content) => content.split(RecordSep).map((TicketInfo(filename), _)) }.
           map { case (tkInfo, record) => (tkInfo, record.split(FieldSep, -1)) }.
           // discard empty lines
-          filter { case (tkInfo, record) => record.size > 1 || (record.size == 1 && !record.isEmpty) }.
+          filter { case (_, record) => record.size > 1 || (record.size == 1 && record.nonEmpty) }.
           map { case (tkInfo, fields) => (tkInfo, fields(0), fields.drop(1)) }
 
         tkLines.persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -52,7 +48,7 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
             Logger.info(s"Processing ticket records of type $recordType to store at ${settings.outputDb}.${builder.value.tableName}")
             val tkRows = tkLines.filter(r => recordType.equals(r._2)).map(r => builder.value.buildRow(r._1, r._3))
             try {
-              Logger.debug(s"Schema with ${builder.value.getSchema.fields.size} fields: ${builder.value.getSchema.fields.map(sf => sf.name).mkString("||")}")
+              Logger.debug(s"Schema with ${builder.value.getSchema.fields.length} fields: ${builder.value.getSchema.fields.map(sf => sf.name).mkString("||")}")
 
               val tkDf = sparkSession.createDataFrame(tkRows, builder.value.getSchema(settings.outputDb, builder.value.tableName)(sparkSession))
               tkDf.
@@ -60,10 +56,10 @@ object TicketsLoaderJob extends SparkJob[TicketsLoaderSettings] {
                 write.
                 insertInto(s"${settings.outputDb}.${builder.value.tableName}")
             } catch {
-              case e: Exception => {
+              case e: Exception =>
                 Logger.info(s"Tried to insert row with schema= ${builder.value.getSchema}")
                 throw e
-              }
+
             }
         }
         tkLines.unpersist(true)

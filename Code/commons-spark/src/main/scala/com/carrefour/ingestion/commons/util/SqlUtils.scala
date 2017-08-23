@@ -3,16 +3,16 @@ package com.carrefour.ingestion.commons.util
 import com.carrefour.ingestion.commons.exception.FatalException
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 
 object SqlUtils {
 
-  val Logger = LoggerFactory.getLogger(getClass)
+  val Logger: Logger = LoggerFactory.getLogger(getClass)
 
   def sql(path: String, args: String*)(implicit sparkSession: SparkSession): Option[DataFrame] = {
 
-    val is = getClass().getResourceAsStream(path)
+    val is = getClass.getResourceAsStream(path)
     if (is == null) {
       throw new FatalException("No existe el fichero: " + path)
     }
@@ -39,13 +39,13 @@ object SqlUtils {
   }
 
   def dropPartitionYearMonthDay(fullTableName: String, year: Int, month: Int, day: Int)(implicit sparkSession: SparkSession): Unit = {
-    Logger.info(s"Dropping partition: ${fullTableName}(year=${year}, month=${month}, day=${day})")
+    Logger.info(s"Dropping partition: $fullTableName(year=$year, month=$month, day=$day)")
     val queryFile="/hql/dropPartitionYearMonthDay.hql"
     sql(queryFile, fullTableName, year.toString, month.toString, day.toString)
   }
 
   def purgePartitionYearMonthDay(fullTableName: String, year: Int, month: Int, day: Int)(implicit sparkSession: SparkSession): Unit = {
-    Logger.info(s"Purging partition: ${fullTableName}(year=${year}, month=${month}, day=${day})")
+    Logger.info(s"Purging partition: $fullTableName(year=$year, month=$month, day=$day)")
     val locationPath = getPartitionLocationYearMonthDay(fullTableName, year, month, day)
     val fs = FileSystem.get(sparkSession.sparkContext.hadoopConfiguration)
     Logger.info(s"Deleting partition folder: $locationPath")
