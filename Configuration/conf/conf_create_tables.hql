@@ -1,5 +1,5 @@
-CREATE DATABASE config
-LOCATION '/user/silkroad/config';
+CREATE database config
+location '/user/silkroad/config';
 
 DROP TABLE IF EXISTS config.ingestion_table;
 CREATE EXTERNAL TABLE config.ingestion_table (
@@ -80,11 +80,12 @@ CREATE EXTERNAL TABLE config.ingestion_fileformat (
 )
 COMMENT 'File format properties'
 ROW FORMAT SERDE
-  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'
+	  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'
 WITH SERDEPROPERTIES (
+  'escape.delim'='\\',
   'field.delim'='\;',
-  'serialization.format'='\;')
-STORED AS INPUTFORMAT
+  'line.delim'='\n',
+  'serialization.format'='\;') STORED AS INPUTFORMAT
   'org.apache.hadoop.mapred.TextInputFormat'
 OUTPUTFORMAT
   'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat';
@@ -105,3 +106,4 @@ STORED AS INPUTFORMAT
   'org.apache.hadoop.mapred.TextInputFormat'
 OUTPUTFORMAT
   'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat';
+
