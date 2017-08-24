@@ -38,27 +38,32 @@ object FieldTransformationUtil {
     } else {
     val f = fields zip structType.fields
     val converted = f.map(x => {
+      val cleaned = x._1 match {
+        case f: String => cleanField(f)(settings)
+        case other => other
+          
+      }
         
-        (x._1, x._2.dataType) match {
+        (cleaned, x._2.dataType) match {
           case (field: String, DoubleType) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toDouble
+            if (field == null) null else field.toDouble
           case (field: String, IntegerType) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toInt
+            if (field == null) null else field.toInt
           case (field: String, LongType) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toLong
+            if (field == null) null else field.toLong
           case (field: String, ShortType) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toShort
+            if (field == null) null else field.toShort
           case (field: String, BooleanType) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else field.trim.toBoolean
+            if (field == null) null else field.toBoolean
           case (field: String, DecimalType()) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else new java.math.BigDecimal(field.trim)
+            if (field == null) null else new java.math.BigDecimal(field)
           case (field: String, TimestampType) =>
-            if (field.trim.isEmpty || field.trim.equalsIgnoreCase("null")) null else {
+            if (field == null) null else {
               val format = new java.text.SimpleDateFormat(settings.timestampFormat)
-              new Timestamp(format.parse(field.trim).getTime)
+              new Timestamp(format.parse(field).getTime)
             }
           case (field:String, _) =>
-            field.trim
+            field
           case _ =>
             x._1
         }
@@ -67,6 +72,13 @@ object FieldTransformationUtil {
       converted
     }
   }
+
+  def cleanField(field: String)(settings: IngestionMetadata): String = {
+    if (field.isEmpty || field.equalsIgnoreCase("null")) null
+    else field.trim.replace(settings.encloseChar, "")
+  }
 }
+
+
 
 case class TransformationInfo(clazz: String, args: Seq[String])
