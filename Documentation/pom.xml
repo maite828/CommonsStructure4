@@ -8,8 +8,6 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.carrefour.ingest.commons</groupId>
+    <groupId>com.carrefour.ingestion.commons</groupId>
     <artifactId>Documentation</artifactId>
-
-
 </project>
