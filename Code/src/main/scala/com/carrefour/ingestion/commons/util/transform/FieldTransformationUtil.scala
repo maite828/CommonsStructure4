@@ -2,8 +2,8 @@ package com.carrefour.ingestion.commons.util.transform
 
 import java.sql.Timestamp
 
+import com.carrefour.ingestion.commons.bean.IngestionMetadata
 import com.carrefour.ingestion.commons.context.{FileSystemContext, SparkSessionContext}
-import com.carrefour.ingestion.commons.controller.IngestionMetadata
 import com.carrefour.ingestion.commons.context.impl.{FileSystemContextImpl, SparkSessionContextImpl}
 import com.carrefour.ingestion.commons.exception.RowFormatException
 import org.apache.spark.sql.Row

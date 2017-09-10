@@ -23,7 +23,7 @@ trait FileType {
   * @param encloseChar  String that defines the enclosing character
   * @param escapeChar String that defines the escape character
   */
-case class DelimitedFileType(
+case class DelimitedFileType (
                               fileFormat: FileFormats.FileFormat,
                               numPartitions: Int,
                               fieldDelimiter: String,

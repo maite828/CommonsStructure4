@@ -1,15 +1,16 @@
 package com.carrefour.ingestion.commons.core
 
+import com.carrefour.ingestion.commons.service.{ExtractService, LoadService, TransformService}
 import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadServiceImpl, TransformServiceImpl}
 
 
 /**
-  * En principio privada con la idea de poder delegar solo en los métodos que se decida
+  * In principle private with the idea of ​​being able to delegate only in the methods that are decided
   */
 object Services {
-  private val extractService: ExtractServiceImpl.type = ExtractServiceImpl
-  private val loadService: LoadServiceImpl.type = LoadServiceImpl
-  private val transformService: TransformServiceImpl.type = TransformServiceImpl
+  private val extractService: ExtractService = ExtractServiceImpl
+  private val loadService: LoadService = LoadServiceImpl
+  private val transformService: TransformService = TransformServiceImpl
 
 
 }

@@ -1,5 +1,7 @@
 package com.carrefour.ingestion.commons.controller
 
+import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadServiceImpl}
+import com.carrefour.ingestion.commons.service.{ExtractService, LoadService}
 import com.carrefour.ingestion.commons.util.SparkJobSettings
 import scopt.OptionParser
 
@@ -22,6 +24,9 @@ case class IngestionSettings(
  */
 object IngestionSettingsLoader extends OptionParser[IngestionSettings]("IngestionJobSettings") {
 
+  private val start: ExtractService = ExtractServiceImpl
+  private val fileLoader: LoadService = LoadServiceImpl
+
   head("Relational data loader", "1.0")
 
   opt[String]('e',"entity") valueName "<entity to load>" action{ (value, config) =>
@@ -43,15 +48,9 @@ object IngestionSettingsLoader extends OptionParser[IngestionSettings]("Ingestio
   } text "Minimum number of RDD partitions to use for the input data. If 0, the original number of partitions will be used. Default value is 0."
 
 
-//  opt[String]("file-format") valueName "<text|gz>" action { (value, config) =>
-//    value.toLowerCase match {
-//      case "text" => config.copy(format = FileFormats.TextFormat)
-//      case "gz" => config.copy(format = FileFormats.GzFormat)
-//      //FIXME support zip format
-//      //      case "zip" => config.copy(format = RelationalFormats.ZipFormat)
-//      case _ => throw new IllegalArgumentException(s"Unsupported file format: $value. Allowed formats are: text, gz")
-//    }
-//  } text "File format: text|gz"
+  def startApp(app: String) = start.nameApp(app:String)
+
+  def fileLoader(jobSettings: IngestionSettings):Unit = fileLoader.run(jobSettings: IngestionSettings)
 
   help("help") text "This help"
 }

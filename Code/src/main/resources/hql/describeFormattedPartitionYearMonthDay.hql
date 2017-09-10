@@ -1,1 +1,0 @@
-describe formatted $1 partition (year=$2, month=$3, day=$4)

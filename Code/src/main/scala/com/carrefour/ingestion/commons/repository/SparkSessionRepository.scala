@@ -1,16 +1,10 @@
 package com.carrefour.ingestion.commons.repository
 
-import com.carrefour.ingestion.commons.context.SparkSessionContext
-import com.carrefour.ingestion.commons.context.impl.SparkSessionContextImpl
+import org.apache.spark.sql.SparkSession
 
-/**
-  *
-  */
-object SparkSessionRepository extends SparkSessionContext{
+trait SparkSessionRepository {
 
-  private val fs: SparkSessionContext =  SparkSessionContextImpl
+  def getSparkSession(appName: String): SparkSession
 
-  override def getSparkSession(appName: String) = fs.getSparkSession(appName: String)
-
-  override def getSparkSession() = fs.getSparkSession()
+  def getSparkSession(): SparkSession
 }

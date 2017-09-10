@@ -1,13 +1,14 @@
 package com.carrefour.ingestion.commons.core
 
-import com.carrefour.ingestion.commons.repository.{FileSystemRepository, HiveRepository, SparkSessionRepository}
+import com.carrefour.ingestion.commons.repository.impl.{FileSystemRepositoryImpl, HiveRepositoryImpl, SparkSessionRepositoryImpl}
 
 /**
-  *  En principio privada con la idea de poder delegar solo en los métodos que se decida
+  *  In principle private with the idea of ​​being able to delegate only in the methods that are decided
   */
 object Repositories {
-  private val hiveService = HiveRepository
-  private val fileSystem = FileSystemRepository
-  private val spark = SparkSessionRepository
+  private val hive = HiveRepositoryImpl
+  private val fileSystem = FileSystemRepositoryImpl
+  private val spark = SparkSessionRepositoryImpl
+
 }
 
