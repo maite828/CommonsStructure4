@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.util.transform
+package com.carrefour.ingestion.commons.service.transform
 
 import java.sql.Timestamp
 
@@ -10,8 +10,8 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 
 object FieldTransformationUtil {
-  val fs: FileSystemContext = FileSystemContextImpl
-  val spark: SparkSessionContext = SparkSessionContextImpl
+  private val fs: FileSystemContext = FileSystemContextImpl
+  private val spark: SparkSessionContext = SparkSessionContextImpl
 
 
   val ArgsSep = "\\|\\|"

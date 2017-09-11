@@ -2,18 +2,12 @@ package com.carrefour.ingestion.commons
 
 import com.carrefour.ingestion.commons.controller.{IngestionSettings, IngestionSettingsLoader}
 
-/**
-  * Main
-  *
-  */
-
 object GenericIngestion {
   /**
     *
     * @param args
     */
   def main(args: Array[String]): Unit = {
-
 
     IngestionSettingsLoader.parse(args, IngestionSettings()).fold(ifEmpty = throw new IllegalArgumentException("Invalid configuration")) {
       settings => {

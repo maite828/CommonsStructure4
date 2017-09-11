@@ -1,4 +1,4 @@
-package com.carrefour.ingestion.commons.util.transform
+package com.carrefour.ingestion.commons.service.transform
 
 import org.apache.spark.sql.types.IntegerType
 import org.slf4j.{Logger, LoggerFactory}

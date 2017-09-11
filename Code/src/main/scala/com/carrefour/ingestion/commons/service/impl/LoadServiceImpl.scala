@@ -2,30 +2,19 @@ package com.carrefour.ingestion.commons.service.impl
 
 import com.carrefour.ingestion.commons.bean.{DelimitedFileType, FileFormats, IngestionMetadata}
 import com.carrefour.ingestion.commons.controller.IngestionSettings
-import com.carrefour.ingestion.commons.repository.impl.{FileSystemRepositoryImpl, SparkSessionRepositoryImpl}
-import com.carrefour.ingestion.commons.repository.{FileSystemRepository, SparkSessionRepository}
-import com.carrefour.ingestion.commons.service.{ExtractService, LoadService}
-import com.carrefour.ingestion.commons.util.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
+import com.carrefour.ingestion.commons.core.{Repositories, Services}
+import com.carrefour.ingestion.commons.exception.logging.LazyLogging
+import com.carrefour.ingestion.commons.service.LoadService
+import com.carrefour.ingestion.commons.service.transform.{FieldInfo, FieldTransformationUtil, TransformationInfo}
+import com.carrefour.ingestion.commons.util.TreatmentDates
 import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode}
-import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Antiguo File Loader
   */
-object LoadServiceImpl extends LoadService {
-
-  val Logger: Logger = LoggerFactory.getLogger(getClass)
-  val extract: ExtractService = ExtractServiceImpl
-  private val dfs: FileSystemRepository = FileSystemRepositoryImpl
-  private val spark: SparkSessionRepository = SparkSessionRepositoryImpl
-
-  override def getSparkSession() = spark.getSparkSession()
-
-//  def readFile(): Unit = {
-//    // Repository.hive
-//  }
+object LoadServiceImpl extends LoadService with LazyLogging{
 
   /**
     * Main method for the ingestion of the files.
@@ -35,19 +24,19 @@ object LoadServiceImpl extends LoadService {
 
   override def run(jobSettings: IngestionSettings): Unit = {
     //Getting the metadata for the configuration of the load
-    val metadata = extract.loadMetadata(jobSettings)
+    val metadata = Services.extractService.loadMetadata(jobSettings)
     //Getting the transformations from the table specified in the settings
     //val transformations = FieldTransformationUtil.loadTransformations(jobSettings.transformationsTable)
 
     //Starting files load
     //The ingestion process will be run for each file found in the metadata configuration
     metadata.foreach(settings => {
-      Logger.info(s"Loading file ${settings.inputPath}")
+      infoLog(s"Loading file ${settings.inputPath}")
       val path = new Path(settings.inputPath)
-      val status = dfs.getFileSystem().globStatus(path)
+      val status = Repositories.dfs.getFileSystem().globStatus(path)
       //Checking whether the input path specified exists or not
       if (status == null) {
-        Logger.error(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
+        errorLog(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
         throw new IllegalArgumentException(s"Invalid parameter ${settings.inputPath}. File doesnt exist.")
       }
       // A specific load process will be used depending on the file type
@@ -59,17 +48,21 @@ object LoadServiceImpl extends LoadService {
   }
 
   override def loadDelimitedFile(fileType: DelimitedFileType, settings: IngestionMetadata): Unit = {
-    val loadYear = settings.date.toString.substring(0, 4).toInt
-    val loadMonth = settings.date.toString.substring(4, 6).toInt
-    val loadDay = settings.date.toString.substring(6, 8).toInt
-    val outputTable = s"${settings.outputDb}.${settings.outputTable}"
 
-    Logger.info(s"Processing file ${settings.inputPath} to $outputTable for date $loadYear$loadMonth$loadDay")
+    val methodName: String = Thread.currentThread().getStackTrace()(1).getMethodName
+    initLog(methodName)
+
+    val datepart:Array[Int] = TreatmentDates.getPartitionFields(settings)
+    warnLog(datepart(0).toString)
+
+    val outputTable = s"${settings.outputDb}.${settings.outputTable}"
+    infoLog(s"Processing file ${settings.inputPath} to $outputTable for date ${datepart(0)}${datepart(1)}${datepart(2)}")
+
     val input = fileType.fileFormat match {
-      case FileFormats.TextFormat => spark.getSparkSession().sparkContext.textFile(settings.inputPath, fileType.numPartitions)
-      case FileFormats.GzFormat => spark.getSparkSession().sparkContext.textFile(settings.inputPath)
+      case FileFormats.TextFormat => Repositories.spark.getSparkSession().sparkContext.textFile(settings.inputPath, fileType.numPartitions)
+      case FileFormats.GzFormat => Repositories.spark.getSparkSession().sparkContext.textFile(settings.inputPath)
       case f =>
-        Logger.error(s"Unsupported format $f. Supported formats are: text, gz.")
+        errorLog(s"Unsupported format $f. Supported formats are: text, gz.")
         throw new IllegalArgumentException(s"Unsupported format $f. Supported formats are: text, gz.")
     }
 
@@ -94,17 +87,19 @@ object LoadServiceImpl extends LoadService {
         map(_.split(fileType.fieldDelimiter, -1))
 
 
-      val schema = spark.getSparkSession().table(outputTable).schema
+      val schema = Repositories.spark.getSparkSession().table(outputTable).schema
       // mark bad records and apply transformations
+
+      val partFields = settings.partitionType.getPartitionFields(settings)
 
       val content = regs.
         map(fields => {
           //FIXME Test fields length properly
-          Row(FieldTransformationUtil.applySchema(fields ++ Array(loadYear, loadMonth, loadDay), schema, settings): _*)
+          Row(FieldTransformationUtil.applySchema(fields ++ Array(datepart(0), datepart(1),datepart(2)), schema, settings): _*)
         })
-
-      Logger.info(s"Writing in table $outputTable")
-      val df = spark.getSparkSession().createDataFrame(content, schema)
+      endLog(methodName)
+      infoLog(s"Writing in table $outputTable")
+      val df = Repositories.spark.getSparkSession().createDataFrame(content, schema)
       df.repartition(8).write.mode(SaveMode.Overwrite).insertInto(outputTable)
 
     }
@@ -120,7 +115,7 @@ object LoadServiceImpl extends LoadService {
     * Field names are taken from Hive Table Definition.
     */
   override def extractFieldsInfo(input: RDD[String], tableName: String, transformations: Map[String, Map[String, TransformationInfo]]): Seq[FieldInfo] = {
-    val fieldNames = spark.getSparkSession().table(tableName).schema.fields.map(_.name)
+    val fieldNames = Repositories.spark.getSparkSession().table(tableName).schema.fields.map(_.name)
     FieldInfo.buildFieldsInfo(tableName.split("\\.").last, fieldNames, transformations)
   }
 

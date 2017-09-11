@@ -32,7 +32,11 @@ CREATE EXTERNAL TABLE config.ingestion_file (
   file_desc		string 	COMMENT 'File description',
   parentpath	string 	COMMENT 'Parent path where de file is located',
   filemask		string	COMMENT	'RegExp with file name mask',
-  fileformat_id	int 	COMMENT 'File format identifier'
+  fileformat_id	 int 	COMMENT 'File format identifier',
+  partition_type string COMMENT 'Partition by date of file-name, controlM, field-fich',
+  partition_param string COMMENT 'Type of partitioning field',
+  partition_date_format string COMMENT 'Partition format by date',
+  partition_transform COMMENT 'Partition transform'
 )
 COMMENT 'File properties'
 ROW FORMAT SERDE

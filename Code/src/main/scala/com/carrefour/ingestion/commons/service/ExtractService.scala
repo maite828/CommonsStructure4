@@ -4,7 +4,7 @@ import com.carrefour.ingestion.commons.bean.IngestionMetadata
 import com.carrefour.ingestion.commons.controller.IngestionSettings
 import org.apache.spark.sql.SparkSession
 
-abstract trait ExtractService {
+trait ExtractService {
 
   def nameApp(app:String): SparkSession
 

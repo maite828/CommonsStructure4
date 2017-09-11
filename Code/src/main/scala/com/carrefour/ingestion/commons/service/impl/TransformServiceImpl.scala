@@ -1,22 +1,22 @@
 package com.carrefour.ingestion.commons.service.impl
 
-import com.carrefour.ingestion.commons.repository.impl.{FileSystemRepositoryImpl, HiveRepositoryImpl, SparkSessionRepositoryImpl}
-import com.carrefour.ingestion.commons.repository.{FileSystemRepository, HiveRepository, SparkSessionRepository}
+import com.carrefour.ingestion.commons.core.{Repositories, Services}
 import com.carrefour.ingestion.commons.service.TransformService
 
 
 object TransformServiceImpl extends TransformService {
 
-  private val dfs: FileSystemRepository = FileSystemRepositoryImpl
-  private val spark: SparkSessionRepository = SparkSessionRepositoryImpl
-  private val hive: HiveRepository = HiveRepositoryImpl
+  Repositories.dfs
+  Repositories.hive
+  Repositories.spark
 
-  override def getSparkSession() = spark.getSparkSession()
+  Services.extractService
+  Services.loadService
 
   val dia: Int = 1
   val mes: Int = 2
   val ano: Int = 2017
 
-  hive.dropPartitionYearMonthDay("ampliaciones", dia, mes, ano)
+  Repositories.hive.dropPartitionYearMonthDay("ampliaciones", dia, mes, ano)
 
 }

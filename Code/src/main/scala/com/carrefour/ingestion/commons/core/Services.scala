@@ -8,9 +8,8 @@ import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadSer
   * In principle private with the idea of ​​being able to delegate only in the methods that are decided
   */
 object Services {
-  private val extractService: ExtractService = ExtractServiceImpl
-  private val loadService: LoadService = LoadServiceImpl
-  private val transformService: TransformService = TransformServiceImpl
 
-
+  val extractService: ExtractService = ExtractServiceImpl
+  val loadService: LoadService = LoadServiceImpl
+  val transformService: TransformService = TransformServiceImpl
 }

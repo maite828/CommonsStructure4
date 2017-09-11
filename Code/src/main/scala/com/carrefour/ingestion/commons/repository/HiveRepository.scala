@@ -1,10 +1,13 @@
 package com.carrefour.ingestion.commons.repository
 
+import com.carrefour.ingestion.commons.controller.IngestionSettings
 import org.apache.spark.sql.DataFrame
 
 trait HiveRepository {
 
-  def sql(path: String, args: String*): Option[DataFrame]
+  def sqlMetadata(settings : IngestionSettings): Option[DataFrame]
+
+//  def sqlFromFile(path: String, args: String*): Option[DataFrame]
 
   def setTableAsExternal(fullTableName: String): Unit
 

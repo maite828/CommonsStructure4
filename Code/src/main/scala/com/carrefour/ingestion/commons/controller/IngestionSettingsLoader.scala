@@ -1,5 +1,6 @@
 package com.carrefour.ingestion.commons.controller
 
+import com.carrefour.ingestion.commons.core.Services
 import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadServiceImpl}
 import com.carrefour.ingestion.commons.service.{ExtractService, LoadService}
 import com.carrefour.ingestion.commons.util.SparkJobSettings
@@ -48,9 +49,9 @@ object IngestionSettingsLoader extends OptionParser[IngestionSettings]("Ingestio
   } text "Minimum number of RDD partitions to use for the input data. If 0, the original number of partitions will be used. Default value is 0."
 
 
-  def startApp(app: String) = start.nameApp(app:String)
+  def startApp(app: String) = Services.extractService.nameApp(app:String)
 
-  def fileLoader(jobSettings: IngestionSettings):Unit = fileLoader.run(jobSettings: IngestionSettings)
+  def fileLoader(jobSettings: IngestionSettings):Unit = Services.loadService.run(jobSettings: IngestionSettings)
 
   help("help") text "This help"
 }

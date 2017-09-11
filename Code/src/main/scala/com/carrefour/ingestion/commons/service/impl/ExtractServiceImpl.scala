@@ -2,24 +2,21 @@ package com.carrefour.ingestion.commons.service.impl
 
 import com.carrefour.ingestion.commons.bean._
 import com.carrefour.ingestion.commons.controller.IngestionSettings
+import com.carrefour.ingestion.commons.core.Repositories
 import com.carrefour.ingestion.commons.exception.FatalException
-import com.carrefour.ingestion.commons.exception.logging.{CommonsException, LazyLogging}
-import com.carrefour.ingestion.commons.repository.SparkSessionRepository
-import com.carrefour.ingestion.commons.repository.impl.SparkSessionRepositoryImpl
+import com.carrefour.ingestion.commons.exception.logging.LazyLogging
 import com.carrefour.ingestion.commons.service.ExtractService
-import com.carrefour.ingestion.commons.service.manage.queries.CommonsLoadQueries
 import org.apache.spark.sql.DataFrame
 
 /**
   * Antiguo Metadata loader
   */
 
-object ExtractServiceImpl extends ExtractService with CommonsLoadQueries with LazyLogging {
+object ExtractServiceImpl extends ExtractService with LazyLogging {
 
-  private val spark: SparkSessionRepository = SparkSessionRepositoryImpl
   val defaultNumPartitions = 8
 
-  override def nameApp(app: String) = spark.getSparkSession(app)
+  override def nameApp(app: String) = Repositories.spark.getSparkSession(app)
 
   /**
     * @param settings Basic configuration loaded through parameters in the command line.
@@ -27,16 +24,7 @@ object ExtractServiceImpl extends ExtractService with CommonsLoadQueries with La
     */
   override def loadMetadata(settings: IngestionSettings): Array[IngestionMetadata] = {
 
-    val methodName: String = Thread.currentThread().getStackTrace()(1).getMethodName
-    val msgError: String = s"$methodName > Error al realizar la carga de parámetria"
-    initLog(methodName)
-
-    val query = sQueryLoadMetadata_Entity(settings.businessunit, settings.entity)
-    warnLog(query)
-    val metadata: Option[DataFrame] = Option(spark.getSparkSession().sql(query))
-
-    if (Option(metadata) isEmpty) throw CommonsException(msgError)
-    endLog(methodName)
+    val metadata: Option[DataFrame] = Repositories.hive.sqlMetadata(settings)
 
     metadata match {
       case Some(metadat) =>
@@ -54,6 +42,10 @@ object ExtractServiceImpl extends ExtractService with CommonsLoadQueries with La
           val datedefaultformat: String = row.getAs[String]("datedefaultformat")
           val enclosechar: String = row.getAs[String]("enclosechar")
           val escapechar: String = row.getAs[String]("escapechar")
+          val partition_type: String = row.getAs[String]("partition_type")
+          val partition_param: String = row.getAs[String]("partition_param")
+          val partition_date_format: String = row.getAs[String]("partition_date_format")
+          val partition_transform: String = row.getAs[String]("partition_transform")
 
           val numPartitions = if (settings.numPartitions == 0) defaultNumPartitions else settings.numPartitions
 
@@ -70,14 +62,21 @@ object ExtractServiceImpl extends ExtractService with CommonsLoadQueries with La
             case "MOVI" => NoFileType()
           }
 
+          val partitionType = partition_type match {
+            case "1" => ParameterPartitionType(partition_date_format, partition_transform)
+            case "2" => FileNamePartitionType(partition_param, partition_date_format, partition_transform)
+          }
+
           //FIXME no mapear -> nuevo objeto con lo necesario
           IngestionMetadata(
             s"$parentpath/$filemask",
             schema_name,
             table_name,
+            filemask,
             fileType,
             datedefaultformat,
             enclosechar,
+            partitionType,
             settings.date,
             settings.year,
             settings.month,
