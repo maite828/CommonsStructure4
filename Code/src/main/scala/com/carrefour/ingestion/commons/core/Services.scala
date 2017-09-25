@@ -1,7 +1,7 @@
 package com.carrefour.ingestion.commons.core
 
-import com.carrefour.ingestion.commons.service.{ExtractService, LoadService, TransformService}
-import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadServiceImpl, TransformServiceImpl}
+import com.carrefour.ingestion.commons.service.{ExtractService, LoadService, MetadataService, TransformService}
+import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadServiceImpl, MetadataServiceImpl, TransformServiceImpl}
 
 
 /**
@@ -12,4 +12,5 @@ object Services {
   val extractService: ExtractService = ExtractServiceImpl
   val loadService: LoadService = LoadServiceImpl
   val transformService: TransformService = TransformServiceImpl
+  val metadataService: MetadataService = MetadataServiceImpl
 }

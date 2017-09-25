@@ -24,7 +24,7 @@ object LoadServiceImpl extends LoadService with LazyLogging{
 
   override def run(jobSettings: IngestionSettings): Unit = {
     //Getting the metadata for the configuration of the load
-    val metadata = Services.extractService.loadMetadata(jobSettings)
+    val metadata = Services.metadataService.loadMetadata(jobSettings)
     //Getting the transformations from the table specified in the settings
     //val transformations = FieldTransformationUtil.loadTransformations(jobSettings.transformationsTable)
 
@@ -52,8 +52,8 @@ object LoadServiceImpl extends LoadService with LazyLogging{
     val methodName: String = Thread.currentThread().getStackTrace()(1).getMethodName
     initLog(methodName)
 
-    val datepart:Array[Int] = TreatmentDates.getPartitionFields(settings)
-    warnLog(datepart(0).toString)
+    //val datepart:Array[Int] = TreatmentDates.getPartitionFields(settings)
+    //warnLog(datepart(0).toString)
 
     val outputTable = s"${settings.outputDb}.${settings.outputTable}"
     infoLog(s"Processing file ${settings.inputPath} to $outputTable for date ${datepart(0)}${datepart(1)}${datepart(2)}")

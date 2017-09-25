@@ -1,8 +1,6 @@
 package com.carrefour.ingestion.commons.controller
 
 import com.carrefour.ingestion.commons.core.Services
-import com.carrefour.ingestion.commons.service.impl.{ExtractServiceImpl, LoadServiceImpl}
-import com.carrefour.ingestion.commons.service.{ExtractService, LoadService}
 import com.carrefour.ingestion.commons.util.SparkJobSettings
 import scopt.OptionParser
 
@@ -24,9 +22,6 @@ case class IngestionSettings(
  * Parser for the relational data loader program. Method  `#parse` produces a `JobSettings` to configure the Spark job.
  */
 object IngestionSettingsLoader extends OptionParser[IngestionSettings]("IngestionJobSettings") {
-
-  private val start: ExtractService = ExtractServiceImpl
-  private val fileLoader: LoadService = LoadServiceImpl
 
   head("Relational data loader", "1.0")
 

@@ -1,6 +1,6 @@
 package com.carrefour.ingestion.commons.repository.impl
 
-import com.carrefour.ingestion.commons.controller.IngestionSettings
+import com.carrefour.ingestion.commons.core.Contexts
 import com.carrefour.ingestion.commons.exception.logging.CommonsException
 import com.carrefour.ingestion.commons.repository.manage.queries.{CommonsAlterQueries, CommonsDropQueries, CommonsLoadQueries, CommonsShowQueries}
 import com.carrefour.ingestion.commons.repository.{FileSystemRepository, HiveRepository, SparkSessionRepository}
@@ -16,27 +16,8 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
   private val spark: SparkSessionRepository = SparkSessionRepositoryImpl
   private val dfs: FileSystemRepository = FileSystemRepositoryImpl
 
-  /**
-    *
-    * @param settings
-    * @return
-    */
-  override def sqlMetadata(settings: IngestionSettings): DataFrame = {
-
-    val methodName: String = Thread.currentThread().getStackTrace()(1).getMethodName
-    val msgError: String = s"$methodName > Error al obtener la parámetria"
-    initLog(methodName)
-
-    val query = sQueryLoadMetadata_Entity(settings.businessunit, settings.entity)
-    infoLog(query)
-
-    val result: DataFrame = spark.getSparkSession().sql(query)
-    warnLog(result.show(0).toString)
-
-    if (result.count() == 0) throw CommonsException(msgError)
-    endLog(methodName)
-
-    result
+  override def sql(query:String):DataFrame = {
+    Contexts.spark.getSparkSession().sql(query)
   }
 
   /**
@@ -53,7 +34,6 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
     infoLog(query)
 
     val result = spark.getSparkSession().sql(query)
-    warnLog(query)
 
     if (result != true) throw CommonsException(msgError)
     endLog(methodName)

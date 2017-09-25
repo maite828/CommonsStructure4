@@ -2,50 +2,62 @@ package com.carrefour.ingestion.commons.bean
 
 import java.util.regex.Pattern
 
-/**
-  * Generic trait. Every type of file must extend this trait, in order for it to be used.
-  */
-trait PartitionType {
-  def getPartitionFields(settings: IngestionMetadata): Array[Int]
-}
+import com.carrefour.ingestion.commons.exception.logging.{CommonsException, LazyLogging}
 
 /**
   *
-  * @param partition_date_format
-  * @param partition_transform
   */
-case class ParameterPartitionType(
-                                   partition_date_format: String,
-                                   partition_transform: String
-                                 ) extends PartitionType {
-  override def getPartitionFields(settings: IngestionMetadata): Array[Int] =
-  //TODO Formatear fecha en función de partition_date_format
-    partition_date_format match {
-      case "yyyymmdd" => Array(
-        settings.date.toString.substring(0, 4).toInt,
-        settings.date.toString.substring(4, 6).toInt,
-        settings.date.toString.substring(6, 8).toInt
-      )
-    }
 
-  case class FileNamePartitionType(
-                                    partition_param: String,
-                                    partition_date_format: String,
-                                    partition_transform: String
-                                  ) extends PartitionType {
-    override def getPartitionFields(settings: IngestionMetadata): Array[String] = {
-      val partPattern = Pattern.compile(partition_param)
-      val matcher = partPattern.matcher(settings.namefile)
-      if (!matcher.matches()) {
-        //TODO error via log de que no hay fecha en el nombre del fichero
-
-      }
-      Array(matcher.group("year"), matcher.group("month"), matcher.group("day"))
-    }
-  }
-
+trait PartitionType {
+  def getPartitionFields(partString: String): Array[Int]
 }
 
-//^tbusuregistrados.*_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<day>[0-9]{2})_[0-9]{6}\.csv$
+case class ParameterPartitionType(partition_date_format: String, partition_transform: String) extends PartitionType with LazyLogging {
+  val methodName: String = Thread.currentThread().getStackTrace()(1).getMethodName
+  initLog(methodName)
+
+  def getPartitionFields(partString: String): Array[Int] = {
+
+    val msgError: String = s"$methodName > No hay fecha en el parametro de entrada"
+
+    //TODO Formatear fecha en función de partition_date_format
+    infoLog(partition_date_format.toString)
+
+    partition_date_format match {
+      case "yyyymmdd" => Array(
+        partString.substring(0, 4).toInt,
+        partString.substring(4, 6).toInt,
+        partString.substring(6, 8).toInt,
+      )
+    }
+  }
+  endLog(methodName)
+}
+
+case class FileNamePartitionType(partition_param:String, partition_date_format: String, partition_transform: String) extends PartitionType with LazyLogging {
+  val methodName: String = Thread.currentThread().getStackTrace()(1).getMethodName
+  initLog(methodName)
+
+  def getPartitionFields(partString: String): Array[Int] = {
+    val msgError: String = s"$methodName > No hay fecha en el nombre del fichero"
+
+    val partPattern = Pattern.compile(partition_param)
+    infoLog(partPattern.toString)
+
+    val matcher = partPattern.matcher(partString)
+    warnLog(matcher.toString)
+
+    if (!matcher.matches()) throw CommonsException(msgError)
+
+    partition_date_format match {
+      case "yyyymmdd" => Array(
+        matcher.group("year").toInt,
+        matcher.group("month").toInt,
+        matcher.group("day").toInt
+      )
+    }
+  }
+  endLog(methodName)
+}
 
 
