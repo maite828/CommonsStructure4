@@ -7,8 +7,8 @@ import com.carrefour.ingestion.commons.service.TransformService
 object TransformServiceImpl extends TransformService {
 
   Repositories.dfs
-  Repositories.hive
   Repositories.spark
+  Repositories.hive
 
   Services.extractService
   Services.loadService

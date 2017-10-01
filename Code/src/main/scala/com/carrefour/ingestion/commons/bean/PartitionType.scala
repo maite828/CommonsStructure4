@@ -7,6 +7,7 @@ import com.carrefour.ingestion.commons.exception.logging.{CommonsException, Lazy
 /**
   *
   */
+
 trait PartitionType {
   def getPartitionFields(partString: String): Array[Int]
 }
@@ -30,7 +31,6 @@ case class ParameterPartitionType(partition_date_format: String, partition_trans
       )
     }
   }
-
   endLog(methodName)
 }
 

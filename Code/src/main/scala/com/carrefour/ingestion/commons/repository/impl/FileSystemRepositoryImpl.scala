@@ -11,5 +11,4 @@ object FileSystemRepositoryImpl extends FileSystemContext with FileSystemReposit
 
   override def getFileSystem() = Contexts.dfs.getFileSystem()
 
-
 }

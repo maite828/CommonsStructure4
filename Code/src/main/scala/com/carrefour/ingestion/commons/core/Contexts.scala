@@ -12,6 +12,5 @@ object Contexts {
 
   val dfs: FileSystemRepository = FileSystemRepositoryImpl
   val spark: SparkSessionContext = SparkSessionContextImpl
-
 }
 

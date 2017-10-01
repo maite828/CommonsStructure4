@@ -1,7 +1,7 @@
 package com.carrefour.ingestion.commons.context.impl
 
 import com.carrefour.ingestion.commons.context.SparkSessionContext
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.SparkSession
 
 /**
   * Context - SparkSession

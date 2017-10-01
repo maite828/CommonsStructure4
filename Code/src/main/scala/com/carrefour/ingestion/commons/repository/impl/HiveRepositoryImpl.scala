@@ -2,8 +2,8 @@ package com.carrefour.ingestion.commons.repository.impl
 
 import com.carrefour.ingestion.commons.core.Contexts
 import com.carrefour.ingestion.commons.exception.logging.CommonsException
+import com.carrefour.ingestion.commons.repository.HiveRepository
 import com.carrefour.ingestion.commons.repository.manage.queries.{CommonsAlterQueries, CommonsDropQueries, CommonsLoadQueries, CommonsShowQueries}
-import com.carrefour.ingestion.commons.repository.{FileSystemRepository, HiveRepository, SparkSessionRepository}
 import com.carrefour.ingestion.commons.service.impl.ExtractServiceImpl._
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.DataFrame
@@ -13,8 +13,6 @@ import org.apache.spark.sql.DataFrame
   */
 object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with CommonsAlterQueries  with CommonsDropQueries with CommonsShowQueries {
 
-  private val spark: SparkSessionRepository = SparkSessionRepositoryImpl
-  private val dfs: FileSystemRepository = FileSystemRepositoryImpl
 
   override def sql(query:String):DataFrame = {
     Contexts.spark.getSparkSession().sql(query)
@@ -33,7 +31,7 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
     val query = sQuerySetTableAsExternal(fullTableName)
     infoLog(query)
 
-    val result = spark.getSparkSession().sql(query)
+    val result = Contexts.spark.getSparkSession().sql(query)
 
     if (result != true) throw CommonsException(msgError)
     endLog(methodName)
@@ -52,7 +50,7 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
     val query = sQuerySetTableAsExternal(fullTableName)
     infoLog(query)
 
-    val result = spark.getSparkSession().sql(query)
+    val result = Contexts.spark.getSparkSession().sql(query)
     warnLog(result.toString())
 
     if (result != true) throw CommonsException(msgError)
@@ -76,7 +74,7 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
     val query = sQueryDropPartitionYearMonthDay(fullTableName, year, month, day)
     infoLog(query)
 
-    val result = spark.getSparkSession().sql(query)
+    val result = Contexts.spark.getSparkSession().sql(query)
     warnLog(result.toString())
 
     if (result != true) throw CommonsException(msgError)
@@ -95,7 +93,7 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
     //    Logger.info(s"Purging partition: $fullTableName(year=$year, month=$month, day=$day)")
     val locationPath = getPartitionLocationYearMonthDay(fullTableName, year, month, day)
     //Logger.info(s"Deleting partition folder: $locationPath")
-    dfs.getFileSystem().delete(new Path(locationPath), true)
+    Contexts.dfs.getFileSystem().delete(new Path(locationPath), true)
 
     dropPartitionYearMonthDay(fullTableName, year, month, day)
   }
@@ -117,7 +115,7 @@ object HiveRepositoryImpl extends HiveRepository with CommonsLoadQueries with Co
     val query = sQueryDescribeFormattedPartition(fullTableName, year, month, day)
     infoLog(query)
 
-    val result = spark.getSparkSession().sql(query)
+    val result = Contexts.spark.getSparkSession().sql(query)
     warnLog(result.toString())
 
     if (result.count() != 0) throw CommonsException(msgError)
